@@ -145,6 +145,16 @@ float ARaceVehicle::GetYawRate() const
 	return VehicleMovement ? VehicleMovement->GetYawRate() : 0.0f;
 }
 
+float ARaceVehicle::GetThrottleInput() const
+{
+	return VehicleMovement ? VehicleMovement->GetDriveCommand().Throttle : 0.0f;
+}
+
+float ARaceVehicle::GetBrakeInput() const
+{
+	return VehicleMovement ? VehicleMovement->GetDriveCommand().Brake : 0.0f;
+}
+
 FVector ARaceVehicle::GetTotalTireForce() const
 {
 	return VehicleMovement ? VehicleMovement->GetTotalTireForce() : FVector::ZeroVector;

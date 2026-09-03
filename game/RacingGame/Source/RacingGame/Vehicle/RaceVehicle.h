@@ -38,6 +38,8 @@ public:
 	float GetForwardSpeed() const;
 	float GetLateralSpeed() const;
 	float GetYawRate() const;
+	float GetThrottleInput() const;
+	float GetBrakeInput() const;
 	float GetVerticalSpeed() const;
 	bool IsGrounded() const;
 	bool GetWheelContact(int32 Index) const;
