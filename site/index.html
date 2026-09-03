@@ -20,8 +20,11 @@
 <main>
 <section>
 <h2>Status</h2>
-<p>Early development. The current milestone is a measured driving prototype
-(Task 2). There is no public release yet.</p>
+<p>Early development. Tasks 1 through 7 are verified headlessly: project
+foundation, driving prototype, vehicle dynamics, data-driven
+architecture, suspension and tires, drivetrain, and the first circuit
+with a deterministic lap. Next is race progression and lap systems
+(Task 8). There is no public release yet.</p>
 </section>
 <section>
 <h2>Project</h2>
@@ -35,10 +38,14 @@
 </section>
 <section>
 <h2>Engineering</h2>
-<p>The game owns its vehicle architecture in a dedicated module
-(<code>Source/RacingGame</code>): a vehicle actor with a public input path,
-a data-driven movement component, and automated headless verification.
-Template vehicle code is kept as untouched reference, not a dependency.
+<p>The game owns its vehicle and track architecture in a dedicated module
+(<code>Source/RacingGame</code>): a vehicle actor with a public input
+path, a data-driven movement component (force model, suspension, tire
+forces on a friction circle), an engine/transmission/differential
+drivetrain, and a runtime-built circuit (road collision, boundaries,
+centerline, ordered checkpoints), all covered by automated headless
+verification. Template vehicle code is retained for project defaults and
+untouched by game code.
 See <a href="https://github.com/bniladridas/traction/blob/main/docs/architecture.md">docs/architecture.md</a>
 and <a href="https://github.com/bniladridas/traction/blob/main/docs/testing.md">docs/testing.md</a>.</p>
 </section>
@@ -48,11 +55,21 @@ and <a href="https://github.com/bniladridas/traction/blob/main/docs/testing.md">
 <tr><th>Milestone</th><th>Functional gate</th><th>Visual verification</th><th>Human feel</th></tr>
 <tr><td>Task 1: project foundation</td><td>PASSED</td><td>BLOCKED</td><td>NOT VERIFIED</td></tr>
 <tr><td>Task 2: driving prototype</td><td>PASSED</td><td>BLOCKED</td><td>NOT VERIFIED</td></tr>
+<tr><td>Task 3: vehicle dynamics</td><td>PASSED</td><td>BLOCKED</td><td>NOT VERIFIED</td></tr>
+<tr><td>Task 4: vehicle architecture</td><td>PASSED</td><td>BLOCKED</td><td>NOT VERIFIED</td></tr>
+<tr><td>Task 5: suspension and tires</td><td>PASSED</td><td>BLOCKED</td><td>NOT VERIFIED</td></tr>
+<tr><td>Task 6: drivetrain</td><td>PASSED</td><td>BLOCKED</td><td>NOT VERIFIED</td></tr>
+<tr><td>Task 7: first track and lap</td><td>PASSED</td><td>BLOCKED</td><td>NOT VERIFIED</td></tr>
 </table>
 <p>Visual verification is blocked on a missing Xcode Metal Toolchain
 component in the development environment. Full evidence:
 <a href="https://github.com/bniladridas/traction/blob/main/docs/verification/task-1-e2e.md">task-1-e2e.md</a>,
-<a href="https://github.com/bniladridas/traction/blob/main/docs/verification/task-2-e2e.md">task-2-e2e.md</a>.</p>
+<a href="https://github.com/bniladridas/traction/blob/main/docs/verification/task-2-e2e.md">task-2-e2e.md</a>,
+<a href="https://github.com/bniladridas/traction/blob/main/docs/verification/task-3-e2e.md">task-3-e2e.md</a>,
+<a href="https://github.com/bniladridas/traction/blob/main/docs/verification/task-4-e2e.md">task-4-e2e.md</a>,
+<a href="https://github.com/bniladridas/traction/blob/main/docs/verification/task-5-e2e.md">task-5-e2e.md</a>,
+<a href="https://github.com/bniladridas/traction/blob/main/docs/verification/task-6-e2e.md">task-6-e2e.md</a>,
+<a href="https://github.com/bniladridas/traction/blob/main/docs/verification/task-7-e2e.md">task-7-e2e.md</a>.</p>
 </section>
 <section>
 <h2>Screenshots</h2>
@@ -63,9 +80,9 @@ so this page shows none rather than placeholders.</p>
 <h2>Roadmap</h2>
 <ol>
 <li>Foundation: project, prototype environment (done)</li>
-<li>Driving: vehicle physics, cameras (in progress)</li>
-<li>First track: circuit geometry, checkpoints</li>
-<li>Racing: race systems, timing, AI</li>
+<li>Driving: vehicle physics, suspension, tires, drivetrain (done)</li>
+<li>First track: circuit geometry, checkpoints, deterministic lap (done)</li>
+<li>Racing: lap systems, timing, race rules, AI</li>
 <li>Graphics: final vehicle, materials, lighting</li>
 <li>Audio and UI</li>
 <li>Optimization for Apple Silicon</li>
