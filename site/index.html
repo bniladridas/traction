@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>traction</title>
+<meta name="description" content="A realistic simcade racing game for macOS.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header>
+<h1>traction</h1>
+<p>A realistic simcade racing game for macOS.</p>
+<nav>
+<a href="https://github.com/bniladridas/traction">Repository</a>
+<a href="https://github.com/bniladridas/traction/releases">Releases</a>
+<a href="https://gist.github.com/bniladridas/9023df59b46899d783cbf49ca95c1c76">Scholarship report</a>
+</nav>
+</header>
+<main>
+<section>
+<h2>Status</h2>
+<p>Early development. The current milestone is a measured driving prototype
+(Task 2). There is no public release yet.</p>
+</section>
+<section>
+<h2>Project</h2>
+<ul>
+<li>Platform: macOS ARM64</li>
+<li>Engine: Unreal Engine 5.8.2</li>
+<li>Renderer: Metal</li>
+<li>Scope: one car, one track, single-player</li>
+<li>Direction: realistic simcade</li>
+</ul>
+</section>
+<section>
+<h2>Engineering</h2>
+<p>The game owns its vehicle architecture in a dedicated module
+(<code>Source/RacingGame</code>): a vehicle actor with a public input path,
+a data-driven movement component, and automated headless verification.
+Template vehicle code is kept as untouched reference, not a dependency.
+See <a href="https://github.com/bniladridas/traction/blob/main/docs/architecture.md">docs/architecture.md</a>
+and <a href="https://github.com/bniladridas/traction/blob/main/docs/testing.md">docs/testing.md</a>.</p>
+</section>
+<section>
+<h2>Verification</h2>
+<table>
+<tr><th>Milestone</th><th>Functional gate</th><th>Visual verification</th><th>Human feel</th></tr>
+<tr><td>Task 1: project foundation</td><td>PASSED</td><td>BLOCKED</td><td>NOT VERIFIED</td></tr>
+<tr><td>Task 2: driving prototype</td><td>PASSED</td><td>BLOCKED</td><td>NOT VERIFIED</td></tr>
+</table>
+<p>Visual verification is blocked on a missing Xcode Metal Toolchain
+component in the development environment. Full evidence:
+<a href="https://github.com/bniladridas/traction/blob/main/docs/verification/task-1-e2e.md">task-1-e2e.md</a>,
+<a href="https://github.com/bniladridas/traction/blob/main/docs/verification/task-2-e2e.md">task-2-e2e.md</a>.</p>
+</section>
+<section>
+<h2>Screenshots</h2>
+<p>Rendered evidence: pending. No rendered frames have been produced yet,
+so this page shows none rather than placeholders.</p>
+</section>
+<section>
+<h2>Roadmap</h2>
+<ol>
+<li>Foundation: project, prototype environment (done)</li>
+<li>Driving: vehicle physics, cameras (in progress)</li>
+<li>First track: circuit geometry, checkpoints</li>
+<li>Racing: race systems, timing, AI</li>
+<li>Graphics: final vehicle, materials, lighting</li>
+<li>Audio and UI</li>
+<li>Optimization for Apple Silicon</li>
+<li>Beta and release</li>
+</ol>
+</section>
+<section>
+<h2>Releases</h2>
+<p>Not yet available. No version has been tagged.</p>
+</section>
+<section>
+<h2>Scholarship</h2>
+<p>The scholarship report is the chronological engineering record: what was
+built, measured, decided, and left unverified. It is append-only and
+evidence-first.</p>
+<p><a href="https://gist.github.com/bniladridas/9023df59b46899d783cbf49ca95c1c76">Read the report</a></p>
+</section>
+</main>
+<footer>
+<p>traction. Evidence first.</p>
+</footer>
+</body>
+</html>

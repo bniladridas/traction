@@ -1,0 +1,51 @@
+# traction site: validate and deploy the static project site to GitHub Pages.
+# Uses only official GitHub Pages Actions with least-privilege permissions.
+# Deploys only when site files change (or manually).
+name: site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - ".github/workflows/site.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Required files exist
+        run: test -f site/index.html && test -f site/styles.css && echo "site files present"
+      - name: Stylesheet is linked
+        run: grep -q 'href="styles.css"' site/index.html && echo "stylesheet linked"
+      - name: No absolute local paths
+        run: "! grep -oE '(src|href)=\"/' site/index.html"
+      - name: No em/en dashes
+        run: "! grep -rn -e '—' -e '–' site/"
+  deploy:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/
+      - id: deployment
+        uses: actions/deploy-pages@v4
