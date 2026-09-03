@@ -36,6 +36,27 @@ namespace Task2Limits
 	constexpr float ResetMaxSpeed = 1.0f;
 }
 
+namespace Task3Limits
+{
+	// All thresholds below were fixed before the first Task 3 passing run.
+	// Gravity/contact: never below 1 cm under rest height, grounded or
+	// wheel contact in at least 90 percent of samples.
+	constexpr float MinZCm = 39.0f;
+	constexpr float GroundedFrac = 0.9f;
+	constexpr float WheelFrac = 0.9f;
+	// Mass/acceleration: peak forward accel over 300 cm/s^2 with visible
+	// engine-curve taper (late-window accel under 90 percent of early).
+	constexpr float AccelPeak = 300.0f;
+	constexpr float TaperMaxRatio = 0.9f;
+	// Braking: peak decel over 500 cm/s^2 in the brake window.
+	constexpr float DecelPeak = 500.0f;
+	// Reverse: speed magnitude never over 105 percent of the 700 limit.
+	constexpr float RevMaxAbs = 735.0f;
+	// Steering rule: normalized high-speed yaw rate under 80 percent of
+	// the normalized low-speed rate (normalized = rate / steer input).
+	constexpr float SteerRatioMax = 0.8f;
+}
+
 UCLASS()
 class RACINGGAME_API ATask2Probe : public AActor
 {
@@ -89,4 +110,20 @@ private:
 	float ResetYawErr = -1.0f;
 	float ResetSpeed = -1.0f;
 	bool bResetDone = false;
+
+	// Task 3 dynamics metrics (additive; Task 2 fields above untouched).
+	float MinZ = 1e9f;
+	int32 GroundSamples = 0;
+	int32 TotalSamples = 0;
+	int32 WheelAllSamples = 0;
+	float VAt10 = 0.0f, VAt15 = 0.0f, VAt25 = 0.0f, VAt30 = 0.0f;
+	bool bGotV10 = false, bGotV15 = false, bGotV25 = false, bGotV30 = false;
+	float PeakAccel = 0.0f;
+	float PeakDecel = 0.0f;
+	float MaxRevAbs = 0.0f;
+	float LastV = 0.0f;
+	double LastT = 0.0;
+	bool bHaveLast = false;
+	float YawAt85 = 0.0f, YawAt100 = 0.0f, YawAt115 = 0.0f, YawAt130 = 0.0f;
+	bool bGotY85 = false, bGotY100 = false, bGotY115 = false, bGotY130 = false;
 };

@@ -1,8 +1,11 @@
-// See header. Temporary Task 2 harness; safe to delete.
-// Timeline (seconds): 0.5 settle/record, 0.5-3.0 full throttle,
-// 3.0-4.0 brake, 4.0-6.0 brake held for reverse, 6.0-6.5 settle,
+// See header. Temporary Task 2/3 harness; safe to delete.
+// Task 2 timeline (seconds, frozen): 0.5 settle/record, 0.5-3.0 full
+// throttle, 3.0-4.0 brake, 4.0-6.0 brake held for reverse, 6.0-6.5 settle,
 // 6.5-7.5 regain speed, 7.5-10.0 throttle plus steering, 10.0 reset,
-// 10.5 measure, 11.0 write results and quit.
+// 10.5 measure, 11.0 Task 2 complete.
+// Task 3 extension (documented addition only): 10.5-11.5 gentle throttle,
+// 11.5-13.0 low-speed steering window, 13.0 measure low-speed yaw rate,
+// 13.5 write results and quit.
 
 #include "Task2Probe.h"
 #include "RaceVehicle.h"
@@ -25,6 +28,9 @@ namespace
 	constexpr double ResetAt = 10.0;
 	constexpr double MeasureAt = 10.5;
 	constexpr double RunEnd = 11.0;
+	constexpr double LowEnd = 11.5;   // Task 3: gentle throttle ends
+	constexpr double LowSteerEnd = 13.0; // Task 3: low-speed steer window ends
+	constexpr double Task3End = 13.5; // Task 3: write results and quit
 	constexpr double SampleEvery = 0.25;
 	constexpr double PawnTimeout = 15.0;
 }
@@ -204,14 +210,81 @@ void ATask2Probe::Tick(float Delta)
 			ResetPosErr, ResetYawErr, ResetSpeed);
 		TakeShot(TEXT("04-reset.png"), TEXT("reset"));
 	}
+	// Task 3 extension: low-speed steering window, starting only after the
+	// reset measurement so the reset reference stays uncontaminated.
+	// Task 2 phases above are untouched.
+	else if (Elapsed >= MeasureAt && Elapsed < LowEnd)
+	{
+		Vehicle->ApplyThrottle(0.4f);
+		Vehicle->ApplyBrake(0.0f);
+		Vehicle->ApplySteering(0.0f);
+	}
+	else if (Elapsed >= LowEnd && Elapsed < LowSteerEnd)
+	{
+		Vehicle->ApplyThrottle(0.3f);
+		Vehicle->ApplyBrake(0.0f);
+		Vehicle->ApplySteering(0.5f);
+	}
+	else
+	{
+		Vehicle->ApplyThrottle(0.0f);
+		Vehicle->ApplyBrake(0.0f);
+		Vehicle->ApplySteering(0.0f);
+	}
 
 	if (Elapsed - LastSample >= SampleEvery)
 	{
 		LastSample = Elapsed;
+		const FVector SL = Vehicle->GetActorLocation();
+		const float SYaw = Vehicle->GetActorRotation().Yaw;
+		const float SSpeed = Vehicle->GetForwardSpeed();
 		UE_LOG(LogTemp, Display, TEXT("TASK2E2E: t=%.2f loc=%s yaw=%.2f speed=%.1f"),
-			Elapsed, *Vehicle->GetActorLocation().ToString(),
-			Vehicle->GetActorRotation().Yaw, Vehicle->GetForwardSpeed());
+			Elapsed, *SL.ToString(), SYaw, SSpeed);
+		// Task 3 metric sampling.
+		MinZ = FMath::Min(MinZ, SL.Z);
+		TotalSamples++;
+		if (Vehicle->IsGrounded())
+		{
+			GroundSamples++;
+		}
+		bool bAll = true;
+		for (int32 wi = 0; wi < 4; ++wi)
+		{
+			bAll = bAll && Vehicle->GetWheelContact(wi);
+		}
+		if (bAll)
+		{
+			WheelAllSamples++;
+		}
+		if (SSpeed < 0.0f)
+		{
+			MaxRevAbs = FMath::Max(MaxRevAbs, -SSpeed);
+		}
+		if (bHaveLast && Elapsed > LastT)
+		{
+			const float Acc = (SSpeed - LastV) / float(Elapsed - LastT);
+			if (Elapsed <= FwdEnd)
+			{
+				PeakAccel = FMath::Max(PeakAccel, Acc);
+			}
+			if (Elapsed >= FwdEnd && Elapsed <= RevEnd)
+			{
+				PeakDecel = FMath::Max(PeakDecel, -Acc);
+			}
+		}
+		LastV = SSpeed;
+		LastT = Elapsed;
+		bHaveLast = true;
 	}
+
+	if (!bGotV10 && Elapsed >= 1.0) { bGotV10 = true; VAt10 = Vehicle->GetForwardSpeed(); }
+	if (!bGotV15 && Elapsed >= 1.5) { bGotV15 = true; VAt15 = Vehicle->GetForwardSpeed(); }
+	if (!bGotV25 && Elapsed >= 2.5) { bGotV25 = true; VAt25 = Vehicle->GetForwardSpeed(); }
+	if (!bGotV30 && Elapsed >= 3.0) { bGotV30 = true; VAt30 = Vehicle->GetForwardSpeed(); }
+	if (!bGotY85 && Elapsed >= 8.5) { bGotY85 = true; YawAt85 = Vehicle->GetActorRotation().Yaw; }
+	if (!bGotY100 && Elapsed >= 10.0) { bGotY100 = true; YawAt100 = Vehicle->GetActorRotation().Yaw; }
+	if (!bGotY115 && Elapsed >= 11.5) { bGotY115 = true; YawAt115 = Vehicle->GetActorRotation().Yaw; }
+	if (!bGotY130 && Elapsed >= 13.0) { bGotY130 = true; YawAt130 = Vehicle->GetActorRotation().Yaw; }
 
 	if (Elapsed >= FwdEnd && FwdEndLoc.IsZero())
 	{
@@ -220,13 +293,13 @@ void ATask2Probe::Tick(float Delta)
 		TakeShot(TEXT("02-acceleration.png"), TEXT("acceleration"));
 	}
 
-	if (!bFinalShotTaken && Elapsed >= RunEnd - 0.5)
+	if (!bFinalShotTaken && Elapsed >= Task3End - 0.5)
 	{
 		bFinalShotTaken = true;
 		TakeShot(TEXT("05-final.png"), TEXT("final"));
 	}
 
-	if (Elapsed >= RunEnd)
+	if (Elapsed >= Task3End)
 	{
 		Finish(true, TEXT("run completed"));
 	}
@@ -291,6 +364,27 @@ void ATask2Probe::WriteResults(bool bOk, const FString& Note) const
 	const bool bReset = ResetPosErr >= 0.0f && ResetPosErr < Task2Limits::ResetMaxPosErrCm
 		&& ResetYawErr < Task2Limits::ResetMaxYawErrDeg && ResetSpeed < Task2Limits::ResetMaxSpeed;
 
+	// Task 3 dynamics metrics from the recorded windows.
+	const double AccelLow = (VAt15 - VAt10) / 0.5;
+	const double AccelHigh = (VAt30 - VAt25) / 0.5;
+	const double TaperRatio = (AccelLow > 1.0) ? (AccelHigh / AccelLow) : -1.0;
+	const double YawHighRate = FMath::Abs(FRotator::NormalizeAxis(YawAt100 - YawAt85)) / 1.5 / 0.4;
+	const double YawLowRate = FMath::Abs(FRotator::NormalizeAxis(YawAt130 - YawAt115)) / 1.5 / 0.5;
+	const double SteerRatio = (YawLowRate > 0.01) ? (YawHighRate / YawLowRate) : -1.0;
+	const double GroundedFrac = (TotalSamples > 0) ? (double)GroundSamples / (double)TotalSamples : 0.0;
+	const double WheelFrac = (TotalSamples > 0) ? (double)WheelAllSamples / (double)TotalSamples : 0.0;
+
+	const bool bGrav = MinZ >= Task3Limits::MinZCm && GroundedFrac >= Task3Limits::GroundedFrac;
+	const bool bMass = PeakAccel >= Task3Limits::AccelPeak && TaperRatio >= 0.0 && TaperRatio < Task3Limits::TaperMaxRatio;
+	const bool bBrakeF = PeakDecel >= Task3Limits::DecelPeak;
+	const bool bRevB = MaxRevAbs <= Task3Limits::RevMaxAbs;
+	const bool bSteerR = SteerRatio >= 0.0 && SteerRatio < Task3Limits::SteerRatioMax;
+	const bool bWheels = WheelFrac >= Task3Limits::WheelFrac;
+
+	UE_LOG(LogTemp, Display, TEXT("TASK2E2E: T3 minZ=%.1f gfrac=%.2f wfrac=%.2f aLow=%.0f aHigh=%.0f taper=%.2f peakA=%.0f peakD=%.0f revMax=%.0f yrH=%.1f yrL=%.1f sratio=%.2f"),
+		MinZ, GroundedFrac, WheelFrac, AccelLow, AccelHigh, TaperRatio, PeakAccel, PeakDecel, MaxRevAbs,
+		YawHighRate, YawLowRate, SteerRatio);
+
 	const FString Json = FString::Printf(
 		TEXT("{\n"
 		"  \"reached_end\": %s,\n"
@@ -321,7 +415,25 @@ void ATask2Probe::WriteResults(bool bOk, const FString& Note) const
 		"  \"pass_camera\": %s,\n"
 		"  \"pass_reset\": %s,\n"
 		"  \"frames\": %d,\n"
-		"  \"avg_fps\": %.1f\n"
+		"  \"avg_fps\": %.1f,\n"
+		"  \"task3_min_z\": %.1f,\n"
+		"  \"task3_grounded_frac\": %.3f,\n"
+		"  \"task3_wheel_frac\": %.3f,\n"
+		"  \"task3_accel_low\": %.1f,\n"
+		"  \"task3_accel_high\": %.1f,\n"
+		"  \"task3_taper_ratio\": %.3f,\n"
+		"  \"task3_peak_accel\": %.1f,\n"
+		"  \"task3_peak_decel\": %.1f,\n"
+		"  \"task3_max_rev_abs\": %.1f,\n"
+		"  \"task3_yaw_rate_high\": %.2f,\n"
+		"  \"task3_yaw_rate_low\": %.2f,\n"
+		"  \"task3_steer_ratio\": %.3f,\n"
+		"  \"pass_task3_gravity\": %s,\n"
+		"  \"pass_task3_mass\": %s,\n"
+		"  \"pass_task3_brake_force\": %s,\n"
+		"  \"pass_task3_reverse_bound\": %s,\n"
+		"  \"pass_task3_steer_rule\": %s,\n"
+		"  \"pass_task3_wheels\": %s\n"
 		"}"),
 		bOk ? TEXT("true") : TEXT("false"), *Note, *FString(ENGINE_VERSION_STRING),
 		GetWorld() ? *GetWorld()->GetMapName() : TEXT("null"),
@@ -338,7 +450,12 @@ void ATask2Probe::WriteResults(bool bOk, const FString& Note) const
 		bFwd ? TEXT("true") : TEXT("false"), bBrake ? TEXT("true") : TEXT("false"),
 		bRev ? TEXT("true") : TEXT("false"), bSteer ? TEXT("true") : TEXT("false"),
 		bCam ? TEXT("true") : TEXT("false"), bReset ? TEXT("true") : TEXT("false"),
-		Frames, AvgFps);
+		Frames, AvgFps,
+		MinZ, GroundedFrac, WheelFrac, AccelLow, AccelHigh, TaperRatio,
+		PeakAccel, PeakDecel, MaxRevAbs, YawHighRate, YawLowRate, SteerRatio,
+		bGrav ? TEXT("true") : TEXT("false"), bMass ? TEXT("true") : TEXT("false"),
+		bBrakeF ? TEXT("true") : TEXT("false"), bRevB ? TEXT("true") : TEXT("false"),
+		bSteerR ? TEXT("true") : TEXT("false"), bWheels ? TEXT("true") : TEXT("false"));
 
 	const FString Dir = FPaths::ProjectSavedDir() + TEXT("Task2E2E/");
 	IPlatformFile& PF = FPlatformFileManager::Get().GetPlatformFile();
