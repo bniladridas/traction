@@ -1,0 +1,64 @@
+// RacingGame-owned prototype vehicle (Task 2).
+// A cube with a box collider, a chase camera, and a minimal input path:
+// public Apply* methods are bound to keys AND called by the E2E harness,
+// so the test exercises the same functions as a player.
+// Presentation detail (mesh, camera framing) stays here; drive behavior
+// lives in URaceVehicleMovement; Task 3 extends the movement model.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameFramework/Pawn.h"
+#include "RaceVehicle.generated.h"
+
+class UBoxComponent;
+class UStaticMeshComponent;
+class USpringArmComponent;
+class UCameraComponent;
+class URaceVehicleMovement;
+
+UCLASS()
+class RACINGGAME_API ARaceVehicle : public APawn
+{
+	GENERATED_BODY()
+
+public:
+	ARaceVehicle();
+
+	// Input path shared by keyboard bindings and the automated harness.
+	void ApplyThrottle(float Value);
+	void ApplyBrake(float Value);
+	void ApplySteering(float Value);
+
+	// Restores the BeginPlay transform with zero velocity. Bound to R.
+	void ResetVehicle();
+
+	float GetForwardSpeed() const;
+	UCameraComponent* GetChaseCamera() const { return ChaseCamera; }
+
+protected:
+	virtual void BeginPlay() override;
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+
+private:
+	// Legacy axis callbacks (see DefaultInput.ini RaceThrottle/RaceSteer).
+	void OnThrottleAxis(float Value);
+	void OnSteerAxis(float Value);
+
+	UPROPERTY(VisibleAnywhere, Category = "Race")
+	UBoxComponent* CollisionBox;
+
+	UPROPERTY(VisibleAnywhere, Category = "Race")
+	UStaticMeshComponent* CubeMesh;
+
+	UPROPERTY(VisibleAnywhere, Category = "Race")
+	USpringArmComponent* CameraArm;
+
+	UPROPERTY(VisibleAnywhere, Category = "Race")
+	UCameraComponent* ChaseCamera;
+
+	UPROPERTY(VisibleAnywhere, Category = "Race")
+	URaceVehicleMovement* VehicleMovement;
+
+	FTransform InitialTransform;
+};
