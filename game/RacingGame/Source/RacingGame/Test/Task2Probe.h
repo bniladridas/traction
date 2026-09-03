@@ -71,6 +71,10 @@ public:
 private:
 	void Finish(bool bOk, const FString& Note);
 	void WriteResults(bool bOk, const FString& Note) const;
+	// Task 4 architecture evidence: configuration audit plus regression
+	// flag copies. Separate artifact; the Task 2/3 schema is untouched.
+	void WriteTask4Artifact(bool bFwd, bool bBrake, bool bRev, bool bSteer, bool bCam, bool bReset,
+		bool bGrav, bool bMass, bool bBrakeF, bool bRevB, bool bSteerR, bool bWheels) const;
 	// Rendered-capture infrastructure (Task 2 screenshots addition).
 	// Records real renderer frames only; under nullrhi no PNGs materialize.
 	// Capture code is compiled and built now; exercised once the Metal

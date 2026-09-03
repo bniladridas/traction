@@ -472,4 +472,67 @@ void ATask2Probe::WriteResults(bool bOk, const FString& Note) const
 	PF.CreateDirectoryTree(*(Dir + TEXT("screenshots/")));
 	FFileHelper::SaveStringToFile(Manifest, *(Dir + TEXT("screenshots/manifest.json")));
 	UE_LOG(LogTemp, Display, TEXT("TASK2E2E: manifest written with %d captures"), ShotEntries.Num());
+
+	WriteTask4Artifact(bFwd, bBrake, bRev, bSteer, bCam, bReset,
+		bGrav, bMass, bBrakeF, bRevB, bSteerR, bWheels);
+}
+
+void ATask2Probe::WriteTask4Artifact(bool bFwd, bool bBrake, bool bRev, bool bSteer, bool bCam, bool bReset,
+	bool bGrav, bool bMass, bool bBrakeF, bool bRevB, bool bSteerR, bool bWheels) const
+{
+	const FRaceVehicleConfig& Cfg = Vehicle ? Vehicle->GetVehicleConfig() : FRaceVehicleConfig();
+	const FRaceVehicleConfig& Act = Vehicle ? Vehicle->GetActiveConfig() : FRaceVehicleConfig();
+
+	const bool bMassOk = FMath::IsNearlyEqual(Cfg.MassKg, 1200.0f);
+	const bool bGravOk = FMath::IsNearlyEqual(Cfg.GravityCmS2, 980.0f);
+	const bool bBrakeOk = FMath::IsNearlyEqual(Cfg.BrakeForceN, 14000.0f);
+	const bool bRevOk = FMath::IsNearlyEqual(Cfg.MaxReverseSpeed, 700.0f);
+	const bool bEngOk = Cfg.EngineForcePoints.Num() == 6;
+
+	FString WheelJson;
+	bool bWheelsOk = (Cfg.Wheels.Num() == 4);
+	const FString WantNames[4] = { TEXT("FL"), TEXT("FR"), TEXT("RL"), TEXT("RR") };
+	const bool WantFront[4] = { true, true, false, false };
+	const bool WantLeft[4] = { true, false, true, false };
+	for (int32 i = 0; i < Cfg.Wheels.Num(); ++i)
+	{
+		const FRaceWheelConfig& W = Cfg.Wheels[i];
+		if (i > 0)
+		{
+			WheelJson += TEXT(",");
+		}
+		WheelJson += FString::Printf(TEXT("{\"name\":\"%s\",\"front\":%s,\"left\":%s,\"offset\":\"%s\"}"),
+			*W.Name.ToString(), W.bFrontAxle ? TEXT("true") : TEXT("false"),
+			W.bLeftSide ? TEXT("true") : TEXT("false"), *W.LocalOffset.ToString());
+		if (i >= 4 || W.Name.ToString() != WantNames[i] || W.bFrontAxle != WantFront[i] || W.bLeftSide != WantLeft[i])
+		{
+			bWheelsOk = false;
+		}
+	}
+	const bool bMatch = FMath::IsNearlyEqual(Cfg.MassKg, Act.MassKg)
+		&& FMath::IsNearlyEqual(Cfg.BrakeForceN, Act.BrakeForceN)
+		&& Act.Wheels.Num() == Cfg.Wheels.Num();
+
+	const FString Json = FString::Printf(
+		TEXT("{\"config_source\":\"ARaceVehicle.VehicleConfig\",\"mass_ok\":%s,\"gravity_ok\":%s,")
+		TEXT("\"brake_ok\":%s,\"revcap_ok\":%s,\"engine_points_ok\":%s,\"wheels_roles_ok\":%s,")
+		TEXT("\"movement_matches_pawn\":%s,\"wheels\":[%s],")
+		TEXT("\"regression\":{\"forward\":%s,\"brake\":%s,\"reverse\":%s,\"steer\":%s,\"camera\":%s,\"reset\":%s,")
+		TEXT("\"gravity\":%s,\"mass\":%s,\"brake_force\":%s,\"reverse_bound\":%s,\"steer_rule\":%s,\"wheels_state\":%s}}"),
+		bMassOk ? TEXT("true") : TEXT("false"), bGravOk ? TEXT("true") : TEXT("false"),
+		bBrakeOk ? TEXT("true") : TEXT("false"), bRevOk ? TEXT("true") : TEXT("false"),
+		bEngOk ? TEXT("true") : TEXT("false"), bWheelsOk ? TEXT("true") : TEXT("false"),
+		bMatch ? TEXT("true") : TEXT("false"), *WheelJson,
+		bFwd ? TEXT("true") : TEXT("false"), bBrake ? TEXT("true") : TEXT("false"),
+		bRev ? TEXT("true") : TEXT("false"), bSteer ? TEXT("true") : TEXT("false"),
+		bCam ? TEXT("true") : TEXT("false"), bReset ? TEXT("true") : TEXT("false"),
+		bGrav ? TEXT("true") : TEXT("false"), bMass ? TEXT("true") : TEXT("false"),
+		bBrakeF ? TEXT("true") : TEXT("false"), bRevB ? TEXT("true") : TEXT("false"),
+		bSteerR ? TEXT("true") : TEXT("false"), bWheels ? TEXT("true") : TEXT("false"));
+
+	const FString Dir = FPaths::ProjectSavedDir() + TEXT("Task4E2E/");
+	IPlatformFile& PF = FPlatformFileManager::Get().GetPlatformFile();
+	PF.CreateDirectoryTree(*Dir);
+	FFileHelper::SaveStringToFile(Json, *(Dir + TEXT("results.json")));
+	UE_LOG(LogTemp, Display, TEXT("TASK2E2E: task4 artifact written"));
 }
