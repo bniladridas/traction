@@ -4,8 +4,28 @@ Three verification categories, never mixed:
 
 1. **Functional**: does the behavior happen? Headless standalone runs with
    scripted input through the real gameplay path, transform logs, and
-   `results.json` with predefined thresholds. Example: 2251.1 cm forward
-   displacement, 89.99 deg steering excursion.
+   `results.json` with predefined thresholds. Example: 1238.3 cm forward
+   displacement with a 0.006 brake ratio on the Task 6 baseline.
+
+## Regression layers (frozen, cumulative)
+
+Each layer keeps its own artifact, schema, thresholds, and phases. New
+tasks add layers; none edit earlier ones.
+
+- Task 2 (`Saved/Task2E2E/`): forward, brake, reverse, steer, camera,
+  reset. Six flags, frozen program on the flat map.
+- Task 3 (same artifact, `pass_task3_*`): gravity/contact, mass/taper,
+  brake force, reverse bound, steer rule, wheels.
+- Task 5 (`Saved/Task5E2E/`): contact, suspension, load, longitudinal,
+  lateral, friction circle.
+- Task 6 (`Saved/Task6E2E/`): RPM bounds, gear progression, reverse
+  drive, torque transfer, engine braking.
+- Task 7 (`Saved/Task7E2E/`): track load, road contact, start
+  alignment, centerline validity, checkpoint order, lap traversal on
+  the circuit map.
+
+CI (`test.yml`) runs both E2E programs on the self-hosted runner and
+fails unless every flag in all five artifacts is true.
 2. **Rendered**: was a real frame produced? Only from the Unreal renderer
    (Metal), never synthetic images. Screenshots prove frames were produced,
    not that the game looks good.
