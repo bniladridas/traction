@@ -17,6 +17,7 @@ class UStaticMeshComponent;
 class USpringArmComponent;
 class UCameraComponent;
 class URaceVehicleMovement;
+class URaceDrivetrain;
 
 UCLASS()
 class RACINGGAME_API ARaceVehicle : public APawn
@@ -55,6 +56,14 @@ public:
 	// Read-only view of what the movement actually consumed.
 	const FRaceVehicleConfig& GetActiveConfig() const;
 
+	// Read-only drivetrain state for verification.
+	float GetEngineRPM() const;
+	float GetEngineTorque() const;
+	int32 GetGearIndex() const;
+	int32 GetUpshiftCount() const;
+	int32 GetDownshiftCount() const;
+	float GetLastShaftTorque() const;
+
 	UCameraComponent* GetChaseCamera() const { return ChaseCamera; }
 
 protected:
@@ -90,6 +99,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Race")
 	URaceVehicleMovement* VehicleMovement;
+
+	UPROPERTY(VisibleAnywhere, Category = "Race")
+	URaceDrivetrain* Drivetrain;
 
 	// Assembled normalized command. Keyboard callbacks and the harness
 	// both write here; the movement consumes the whole struct.

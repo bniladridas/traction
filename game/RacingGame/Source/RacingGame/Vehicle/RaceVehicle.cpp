@@ -2,6 +2,7 @@
 
 #include "RaceVehicle.h"
 #include "RaceVehicleMovement.h"
+#include "RaceDrivetrain.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -38,6 +39,8 @@ ARaceVehicle::ARaceVehicle()
 	ChaseCamera->SetupAttachment(CameraArm);
 
 	VehicleMovement = CreateDefaultSubobject<URaceVehicleMovement>(TEXT("VehicleMovement"));
+
+	Drivetrain = CreateDefaultSubobject<URaceDrivetrain>(TEXT("Drivetrain"));
 }
 
 void ARaceVehicle::BeginPlay()
@@ -45,6 +48,8 @@ void ARaceVehicle::BeginPlay()
 	Super::BeginPlay();
 	VehicleMovement->SetUpdatedComponent(CollisionBox);
 	VehicleMovement->ApplyConfig(VehicleConfig);
+	VehicleMovement->SetDrivetrain(Drivetrain);
+	Drivetrain->ApplyConfig(VehicleConfig);
 	SettleToGround();
 	InitialTransform = GetActorTransform();
 }
@@ -193,4 +198,34 @@ FVector ARaceVehicle::GetWheelContactNormal(int32 Index) const
 const FRaceVehicleConfig& ARaceVehicle::GetActiveConfig() const
 {
 	return VehicleMovement->GetActiveConfig();
+}
+
+float ARaceVehicle::GetEngineRPM() const
+{
+	return Drivetrain ? Drivetrain->GetEngineRPM() : 0.0f;
+}
+
+float ARaceVehicle::GetEngineTorque() const
+{
+	return Drivetrain ? Drivetrain->GetEngineTorque() : 0.0f;
+}
+
+int32 ARaceVehicle::GetGearIndex() const
+{
+	return Drivetrain ? Drivetrain->GetGearIndex() : 0;
+}
+
+int32 ARaceVehicle::GetUpshiftCount() const
+{
+	return Drivetrain ? Drivetrain->GetUpshiftCount() : 0;
+}
+
+int32 ARaceVehicle::GetDownshiftCount() const
+{
+	return Drivetrain ? Drivetrain->GetDownshiftCount() : 0;
+}
+
+float ARaceVehicle::GetLastShaftTorque() const
+{
+	return Drivetrain ? Drivetrain->GetLastShaftTorque() : 0.0f;
 }

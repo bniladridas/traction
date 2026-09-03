@@ -57,9 +57,28 @@ namespace Task3Limits
 	constexpr float SteerRatioMax = 0.8f;
 }
 
-namespace Task5Limits
+namespace Task6Limits
 {
-	// All thresholds below were fixed before the first Task 5 passing run.
+	// All thresholds below were fixed before the first Task 6 passing run.
+	// RPM stays within idle floor and maximum cap, and responds to
+	// throttle by rising over 1500 in the acceleration window.
+	constexpr float RPMMin = 990.0f;
+	constexpr float RPMMaxOk = 6800.0f;
+	constexpr float RPMResponse = 1500.0f;
+	// Gear progression: second gear reached, at least one upshift and one
+	// downshift, reverse gear observed in the reverse window.
+	constexpr int32 GearMaxMin = 2;
+	constexpr int32 ShiftsMin = 1;
+	// Torque transfer: mean driven-wheel force over 500 N accelerating.
+	constexpr float DriveMeanMin = 500.0f;
+	// Engine braking: lift-window mean magnitude between 200 and 3000 N,
+	// opposing forward motion.
+	constexpr float EbMin = 200.0f;
+	constexpr float EbMax = 3000.0f;
+}
+
+namespace Task5Limits
+{	// All thresholds below were fixed before the first Task 5 passing run.
 	// Contact: points finite, normals valid (Z over 0.9 on the flat track),
 	// every rest-window sample across all four wheels.
 	constexpr float ContactNormMinZ = 0.9f;
@@ -106,6 +125,9 @@ private:
 	// Task 5 architecture evidence: wheel/tire metrics plus regression
 	// flag copies. Separate artifact; earlier schemas untouched.
 	void WriteTask5Artifact(bool bFwd, bool bBrake, bool bRev, bool bSteer, bool bCam, bool bReset,
+		bool bGrav, bool bMass, bool bBrakeF, bool bRevB, bool bSteerR, bool bWheels) const;
+	// Task 6 drivetrain evidence. Separate artifact; earlier schemas untouched.
+	void WriteTask6Artifact(bool bFwd, bool bBrake, bool bRev, bool bSteer, bool bCam, bool bReset,
 		bool bGrav, bool bMass, bool bBrakeF, bool bRevB, bool bSteerR, bool bWheels) const;
 	// Rendered-capture infrastructure (Task 2 screenshots addition).
 	// Records real renderer frames only; under nullrhi no PNGs materialize.
@@ -183,4 +205,25 @@ private:
 	int32 SteerOpposeOk = 0;
 	int32 SteerOpposeN = 0;
 	float CircleMinMargin = 1e9f;
+
+	// Task 6 drivetrain metrics (additive; earlier fields untouched).
+	float MaxRPM = 0.0f;
+	float MinRPM = 1e9f;
+	float MaxTorque = 0.0f;
+	float MaxShaft = 0.0f;
+	int32 MaxGearIdx = -2;	int32 InitialGearIdx = -99;
+	bool bGotInitialGear = false;
+	bool bRevGearSeen = false;
+	// Task 5 flags stored by WriteTask5Artifact for the Task 6 artifact.
+	mutable bool T5Contact = false;
+	mutable bool T5Susp = false;
+	mutable bool T5Load = false;
+	mutable bool T5Long = false;
+	mutable bool T5Lat = false;
+	mutable bool T5Circle = false;
+	float DriveSum = 0.0f;
+	int32 DriveN = 0;
+	float ShaftSum = 0.0f;
+	float EbSum = 0.0f;
+	int32 EbN = 0;
 };

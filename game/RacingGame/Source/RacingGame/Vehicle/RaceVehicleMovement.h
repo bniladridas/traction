@@ -14,7 +14,7 @@
 #include "RaceVehicleConfig.h"
 #include "RaceVehicleMovement.generated.h"
 
-// Runtime state for one wheel. Forces in newtons, lengths in cm unless
+class URaceDrivetrain;// Runtime state for one wheel. Forces in newtons, lengths in cm unless
 // noted. Read-only to verification through movement getters.
 USTRUCT(BlueprintType)
 struct FRaceWheelState
@@ -70,6 +70,11 @@ public:
 	// the movement keeps a working copy it never edits externally.
 	void ApplyConfig(const FRaceVehicleConfig& Config);
 
+	// Drivetrain wiring. The pawn owns the component; the movement calls
+	// it once per tick for driven-axle requests. Never null in a running
+	// game; guarded regardless.
+	void SetDrivetrain(class URaceDrivetrain* InDrivetrain) { Drivetrain = InDrivetrain; }
+
 	// The only input path. Normalized commands, no key knowledge.
 	void SetDriveCommand(const FRaceDriveCommand& Command) { DriveCommand = Command; }
 	const FRaceDriveCommand& GetDriveCommand() const { return DriveCommand; }
@@ -95,13 +100,14 @@ public:
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 private:
-	float EvalEngineForce(float SpeedCmS) const;
 	void UpdateWheelContact();
 	void UpdateSuspension(float DeltaTime);
-	void UpdateTireForces();
+	void UpdateTireForces(float DrivenAxleReq, float BrakeAxleReq);
+	bool IsDrivenWheel(int32 Index) const;
 
 	FRaceVehicleConfig ActiveConfig;
 	FRaceDriveCommand DriveCommand;
+	TWeakObjectPtr<URaceDrivetrain> Drivetrain;
 	float ForwardSpeed = 0.0f;
 	float LateralSpeed = 0.0f;
 	float VerticalSpeed = 0.0f;

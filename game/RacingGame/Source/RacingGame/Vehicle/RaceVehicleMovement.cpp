@@ -1,8 +1,9 @@
-// See header. Task 5 model: per-wheel contact, spring-damper suspension,
-// friction-circle tire forces. Body longitudinal behavior matches Task 3
-// in straight phases; lateral velocity state is new.
+// See header. Task 6: longitudinal drive requests come from the
+// drivetrain (driven axle) and the movement-side service brake; the tire
+// path, suspension, steering, and integration are unchanged from Task 5.
 
 #include "RaceVehicleMovement.h"
+#include "RaceDrivetrain.h"
 #include "Engine/World.h"
 
 bool URaceVehicleMovement::GetWheelContact(int32 Index) const
@@ -48,31 +49,18 @@ void URaceVehicleMovement::ApplyConfig(const FRaceVehicleConfig& Config)
 		UE_LOG(LogTemp, Warning, TEXT("RACEMOVE: config has %d wheels, model expects 4"),
 			ActiveConfig.Wheels.Num());
 	}
-}
-
-float URaceVehicleMovement::EvalEngineForce(float SpeedCmS) const
-{
-	const TArray<FVector2D>& Points = ActiveConfig.EngineForcePoints;
-	if (Points.Num() == 0)
+	for (const int32 Idx : ActiveConfig.DrivenWheelIndices)
 	{
-		return 0.0f;
-	}
-	const float V = FMath::Max(0.0f, SpeedCmS);
-	if (V <= Points[0].X)
-	{
-		return Points[0].Y;
-	}
-	for (int32 i = 1; i < Points.Num(); ++i)
-	{
-		if (V <= Points[i].X)
+		if (Idx < 0 || Idx >= 4)
 		{
-			const FVector2D& A = Points[i - 1];
-			const FVector2D& B = Points[i];
-			const float T = (V - A.X) / FMath::Max(1.0f, B.X - A.X);
-			return FMath::Lerp(A.Y, B.Y, T);
+			UE_LOG(LogTemp, Warning, TEXT("RACEMOVE: driven index %d out of range"), Idx);
 		}
 	}
-	return Points.Last().Y;
+}
+
+bool URaceVehicleMovement::IsDrivenWheel(int32 Index) const
+{
+	return ActiveConfig.DrivenWheelIndices.Contains(Index);
 }
 
 void URaceVehicleMovement::UpdateWheelContact()
@@ -141,39 +129,31 @@ void URaceVehicleMovement::UpdateSuspension(float DeltaTime)
 	}
 }
 
-void URaceVehicleMovement::UpdateTireForces()
+void URaceVehicleMovement::UpdateTireForces(float DrivenAxleReq, float BrakeAxleReq)
 {
 	const TArray<FRaceWheelConfig>& Wheels = ActiveConfig.Wheels;
-	const float Throttle = DriveCommand.Throttle;
-	const float Brake = DriveCommand.Brake;
 	const float Vx = ForwardSpeed;
 	const float Vy = LateralSpeed;
 
-	// Longitudinal request in newtons, Task 3 logic unchanged.
-	float Req = 0.0f;
-	if (Brake > 0.0f)
-	{
-		Req = (Vx > ActiveConfig.ReverseEngageSpeed)
-			? -Brake * ActiveConfig.BrakeForceN
-			: -Brake * ActiveConfig.ReverseForceN;
-	}
-	else if (Throttle > 0.0f)
-	{
-		Req = (Vx < 0.0f)
-			? Throttle * ActiveConfig.BrakeForceN
-			: Throttle * EvalEngineForce(Vx);
-	}
-
+	// Longitudinal requests in newtons. Driven-axle force (engine drive,
+	// reverse, engine braking) comes from the drivetrain and splits over
+	// contacting driven wheels. Service braking stays movement-side and
+	// splits over all contacting wheels, preserving Task 3 behavior.
 	int32 nContact = 0;
+	int32 nDrivenContact = 0;
 	for (int32 i = 0; i < 4; ++i)
 	{
 		if (WheelState[i].bContact)
 		{
 			++nContact;
+			if (IsDrivenWheel(i))
+			{
+				++nDrivenContact;
+			}
 		}
 	}
-	const float PerWheelReq = (nContact > 0) ? (Req / (float)nContact) : 0.0f;
-
+	const float DrivenShareLocal = (nDrivenContact > 0) ? (DrivenAxleReq / (float)nDrivenContact) : 0.0f;
+	const float BrakeShareLocal = (nContact > 0) ? (BrakeAxleReq / (float)nContact) : 0.0f;
 	const float Omega = YawRateDegS * (3.14159265f / 180.0f); // rad/s, signed
 	float SumX = 0.0f;
 	float SumY = 0.0f;
@@ -201,9 +181,9 @@ void URaceVehicleMovement::UpdateTireForces()
 		const float VLong = Vwx * C + Vwy * S;
 		const float VLat = -Vwx * S + Vwy * C;
 		(void)VLong;
-		float Flong = PerWheelReq;
+		float Flong = BrakeShareLocal + (IsDrivenWheel(i) ? DrivenShareLocal : 0.0f);
 		float Flat = -ActiveConfig.LateralStiffness * VLat;
-		WS.LongSlipInput = PerWheelReq;
+		WS.LongSlipInput = Flong;
 		WS.LatSlip = VLat;
 		// Friction circle: scale the pair to fit mu*N.
 		const float Flim = ActiveConfig.FrictionMu * WS.NormalLoad;
@@ -238,6 +218,21 @@ void URaceVehicleMovement::TickComponent(float DeltaTime, enum ELevelTick TickTy
 	float Vx = ForwardSpeed;
 	float Vy = LateralSpeed;
 
+	// Longitudinal requests. Driven-axle force (engine drive, reverse,
+	// engine braking) comes from the drivetrain. Service braking stays
+	// movement-side with the Task 3 treatment: full brake force against
+	// forward motion above the engage speed.
+	float DrivenReq = 0.0f;
+	if (Drivetrain.IsValid())
+	{
+		DrivenReq = Drivetrain->UpdateDrive(DriveCommand.Throttle, DriveCommand.Brake, Vx);
+	}
+	float BrakeReq = 0.0f;
+	if (DriveCommand.Brake > 0.0f && Vx > ActiveConfig.ReverseEngageSpeed)
+	{
+		BrakeReq = -DriveCommand.Brake * ActiveConfig.BrakeForceN;
+	}
+
 	// Yaw integration keeps the verified Task 3 authority rule.
 	const float AbsV = FMath::Abs(Vx);
 	float Authority = 0.0f;
@@ -250,7 +245,7 @@ void URaceVehicleMovement::TickComponent(float DeltaTime, enum ELevelTick TickTy
 	const float YawDeltaDeg = DriveCommand.Steering * ActiveConfig.SteerYawLow * Authority * Direction * DeltaTime;
 	YawRateDegS = YawDeltaDeg / DeltaTime;
 
-	UpdateTireForces();
+	UpdateTireForces(DrivenReq, BrakeReq);
 
 	// Longitudinal resistances oppose forward motion (Task 3 treatment).
 	const float Vms = Vx / 100.0f;
