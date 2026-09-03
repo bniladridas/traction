@@ -1,8 +1,10 @@
 # traction test: headless functional E2E on a self-hosted macOS ARM64 runner.
-# Same runner constraint as build.yml. The test never fabricates a pass:
-# thresholds live in the probe code, results.json carries the pass flags,
-# and this job fails unless every flag is true. NullRHI numbers are logic
-# measurements, never presented as render performance.
+# Same runner constraint as build.yml. Two programs run: the flat-map
+# regression suite (Tasks 2/3/5/6) and the circuit-map suite (Task 7).
+# The test never fabricates a pass: thresholds live in the probe code,
+# results.json files carry the pass flags, and this job fails unless every
+# flag in every artifact is true. NullRHI numbers are logic measurements,
+# never presented as render performance.
 name: test
 
 on:
@@ -10,6 +12,8 @@ on:
     paths:
       - "game/RacingGame/Source/**"
       - "game/RacingGame/Content/Task2/**"
+      - "game/RacingGame/Content/Track/**"
+      - "game/RacingGame/Content/Python/**"
   pull_request:
   workflow_dispatch:
 
@@ -19,7 +23,9 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      - name: Run Task 2 headless E2E
+      - name: Run flat-map regression E2E (Tasks 2/3/5/6)
         run: /Users/Shared/UE_5.8/Engine/Binaries/Mac/UnrealEditor.app/Contents/MacOS/UnrealEditor "${{ github.workspace }}/game/RacingGame/RacingGame.uproject" "/Game/Task2/Task2_TestTrack?game=/Script/RacingGame.RaceTestGameMode" -game -nullrhi -unattended -nosound -nopause -nosplash -log
-      - name: Check results.json pass flags
-        run: python3 -c "import json,sys; d=json.load(open('game/RacingGame/Saved/Task2E2E/results.json')); flags=[d[k] for k in ['pass_forward','pass_brake','pass_reverse','pass_steer','pass_camera','pass_reset']]; print(flags); sys.exit(0 if all(flags) and d['reached_end'] else 1)"
+      - name: Run circuit E2E (Task 7)
+        run: /Users/Shared/UE_5.8/Engine/Binaries/Mac/UnrealEditor.app/Contents/MacOS/UnrealEditor "${{ github.workspace }}/game/RacingGame/RacingGame.uproject" "/Game/Track/Track1_TestCircuit?game=/Script/RacingGame.RaceTrackTestGameMode" -game -nullrhi -unattended -nosound -nopause -nosplash -log
+      - name: Check all regression pass flags
+        run: python3 -c "import json,sys; t2=json.load(open('game/RacingGame/Saved/Task2E2E/results.json')); t5=json.load(open('game/RacingGame/Saved/Task5E2E/results.json')); t6=json.load(open('game/RacingGame/Saved/Task6E2E/results.json')); t7=json.load(open('game/RacingGame/Saved/Task7E2E/results.json')); flags=[t2[k] for k in ['pass_forward','pass_brake','pass_reverse','pass_steer','pass_camera','pass_reset']]+[t2[k] for k in ['pass_task3_gravity','pass_task3_mass','pass_task3_brake_force','pass_task3_reverse_bound','pass_task3_steer_rule','pass_task3_wheels']]+[t5[k] for k in ['contact_ok','susp_ok','load_ok','long_ok','lat_ok','circle_ok']]+[t6[k] for k in ['engine_response','rpm_bounds','gear_progression','reverse_drive','torque_transfer','engine_braking']]+[t7[k] for k in ['track_load','road_contact','start_alignment','centerline_valid','checkpoint_order','lap_traversal']]; print(len(flags),'flags:',flags); sys.exit(0 if len(flags)==30 and all(flags) and t2['reached_end'] else 1)"
