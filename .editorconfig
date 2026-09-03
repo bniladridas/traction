@@ -1,0 +1,19 @@
+# EditorConfig for traction. Keeps C++, Markdown, and config formatting steady.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{cpp,h,cs}]
+indent_style = tab
+indent_size = 4
+
+[*.{md,json,ini,yml,yaml}]
+indent_style = space
+indent_size = 2
+
+[*.uproject]
+indent_style = tab

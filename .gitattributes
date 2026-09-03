@@ -1,0 +1,30 @@
+# Git attributes for traction (Unreal project, no Git LFS configured yet).
+# Binary assets must not be diffed or line-converted. No external diff
+# drivers are referenced, so plain git works everywhere. Before pushing
+# large binaries to a remote, set up Git LFS and switch the asset lines
+# below to the LFS filters.
+*.uasset binary -diff -text -merge
+*.umap binary -diff -text -merge
+*.upackage binary -diff -text -merge
+*.ubulk binary -diff -text -merge
+*.uexp binary -diff -text -merge
+*.uvtex binary -diff -text -merge
+*.png binary -diff -text -merge
+*.fbx binary -diff -text -merge
+*.wav binary -diff -text -merge
+*.mp3 binary -diff -text -merge
+*.ogg binary -diff -text -merge
+*.ttf binary -diff -text -merge
+*.otf binary -diff -text -merge
+*.uproject text eol=lf
+*.uplugin text eol=lf
+*.ini text eol=lf
+*.cs text eol=lf
+*.cpp text eol=lf
+*.h text eol=lf
+*.md text eol=lf
+*.py text eol=lf
+*.sh text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf

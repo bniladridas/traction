@@ -1,0 +1,17 @@
+# .gitignore for UE5 + macOS
+Binaries/
+Build/
+DerivedDataCache/
+Intermediate/
+Saved/
+.vs/
+.vscode/
+*.xcworkspace
+*.xcuserdata/
+xcuserdata/
+DerivedData/
+*.udn
+*.uasset~
+
+# macOS
+.DS_Store

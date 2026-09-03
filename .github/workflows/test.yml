@@ -1,0 +1,25 @@
+# traction test: headless functional E2E on a self-hosted macOS ARM64 runner.
+# Same runner constraint as build.yml. The test never fabricates a pass:
+# thresholds live in the probe code, results.json carries the pass flags,
+# and this job fails unless every flag is true. NullRHI numbers are logic
+# measurements, never presented as render performance.
+name: test
+
+on:
+  push:
+    paths:
+      - "game/RacingGame/Source/**"
+      - "game/RacingGame/Content/Task2/**"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Task 2 headless E2E
+        run: /Users/Shared/UE_5.8/Engine/Binaries/Mac/UnrealEditor.app/Contents/MacOS/UnrealEditor "${{ github.workspace }}/game/RacingGame/RacingGame.uproject" "/Game/Task2/Task2_TestTrack?game=/Script/RacingGame.RaceTestGameMode" -game -nullrhi -unattended -nosound -nopause -nosplash -log
+      - name: Check results.json pass flags
+        run: python3 -c "import json,sys; d=json.load(open('game/RacingGame/Saved/Task2E2E/results.json')); flags=[d[k] for k in ['pass_forward','pass_brake','pass_reverse','pass_steer','pass_camera','pass_reset']]; print(flags); sys.exit(0 if all(flags) and d['reached_end'] else 1)"

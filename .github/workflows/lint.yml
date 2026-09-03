@@ -1,0 +1,25 @@
+# traction lint: always runs on github-hosted runners, no engine needed.
+# Guards the evidence-first documentation standard: no em/en dashes in
+# repo Markdown, no trailing whitespace, valid uproject JSON, valid
+# workflow YAML (implicit by running at all).
+name: lint
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: No em/en dashes in Markdown
+        run: "! grep -rn --include='*.md' -e '—' -e '–' . --exclude-dir=.git"
+      - name: No trailing whitespace (owned files only; template excluded)
+        run: "! grep -rn --include='*.md' --include='*.cpp' --include='*.h' --include='*.cs' --include='*.ini' --include='*.yml' -e ' $' AGENTS.md DESIGN.md ROADMAP.md README.md THIRD_PARTY.md docs/ game/RacingGame/Source/RacingGame/ game/RacingGame/Config/DefaultInput.ini .github/ --exclude-dir=.git"
+      - name: Uproject JSON parses
+        run: python3 -c "import json; json.load(open('game/RacingGame/RacingGame.uproject')); print('uproject OK')"
+      - name: Results thresholds documented
+        run: test -f docs/verification/task-1-e2e.md && test -f docs/verification/task-2-e2e.md && echo "verification docs present"
