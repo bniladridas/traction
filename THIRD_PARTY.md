@@ -31,3 +31,10 @@ chosen for original work. This is an inventory, not legal advice.
 Every third-party library, asset pack, font, sound, HDRI, or tool output
 added to this repository must be recorded here with its source and license
 before it is used in a build. Content without clear rights is not added.
+
+## Large files
+
+Git LFS is not configured: the largest tracked file is 17 MB and the
+tracked tree totals about 104 MB, both GitHub-friendly. Set up LFS before
+any push that would add a file over 50 MB or take the tracked tree over
+1 GB (expected when real vehicle and track art lands).
