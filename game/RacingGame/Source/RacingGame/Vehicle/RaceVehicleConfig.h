@@ -64,18 +64,84 @@ struct FRaceVehicleConfig
 	UPROPERTY(EditAnywhere, Category = "Race|Gravity")
 	float GravityCmS2 = 980.0f;
 
-	// Engine force curve: X is forward speed in cm/s, Y is force in
-	// newtons. Linear interpolation, clamped at the ends. Migrated
-	// unchanged from the Task 3 movement defaults.
+	// Engine torque curve: X is engine speed in RPM, Y is torque in Nm.
+	// Linear interpolation, clamped at the ends. Sized like a small
+	// naturally aspirated engine; Task 6 development parameters, not a
+	// production claim. Replaces the Task 3 force curve, which was a
+	// stand-in removed by this refactor rather than duplicated.
 	UPROPERTY(EditAnywhere, Category = "Race|Engine")
-	TArray<FVector2D> EngineForcePoints = {
-		FVector2D(0.0f, 9000.0f),
-		FVector2D(1000.0f, 8200.0f),
-		FVector2D(2000.0f, 6400.0f),
-		FVector2D(3000.0f, 3800.0f),
-		FVector2D(4000.0f, 1000.0f),
-		FVector2D(4500.0f, 0.0f)
+	TArray<FVector2D> EngineTorqueCurve = {
+		FVector2D(800.0f, 150.0f),
+		FVector2D(1000.0f, 180.0f),
+		FVector2D(1500.0f, 230.0f),
+		FVector2D(2000.0f, 265.0f),
+		FVector2D(2500.0f, 300.0f),
+		FVector2D(3000.0f, 325.0f),
+		FVector2D(3500.0f, 340.0f),
+		FVector2D(4000.0f, 335.0f),
+		FVector2D(4500.0f, 320.0f),
+		FVector2D(5000.0f, 300.0f),
+		FVector2D(5500.0f, 275.0f),
+		FVector2D(6000.0f, 250.0f),
+		FVector2D(6500.0f, 150.0f),
+		FVector2D(6800.0f, 0.0f)
 	};
+
+	// Engine speed bounds in RPM.
+	UPROPERTY(EditAnywhere, Category = "Race|Engine")
+	float EngineIdleRPM = 1000.0f;
+	UPROPERTY(EditAnywhere, Category = "Race|Engine")
+	float EngineRedlineRPM = 6200.0f;
+	UPROPERTY(EditAnywhere, Category = "Race|Engine")
+	float EngineMaxRPM = 6800.0f;
+
+	// Forward gear ratios, low to high. Sized with the shift points below
+	// so the frozen 2.5 s full-throttle window exercises a shift;
+	// production calibration is later work.
+	UPROPERTY(EditAnywhere, Category = "Race|Transmission")
+	TArray<float> GearRatios = { 3.0f, 1.7f, 1.25f, 0.95f };
+
+	UPROPERTY(EditAnywhere, Category = "Race|Transmission")
+	float FinalDriveRatio = 3.5f;
+
+	// Shift points in RPM with hysteresis (down strictly below up). Sized
+	// for the frozen test program as above, not as production calibration.
+	// The upshift lands early enough that the high-speed accel window sits
+	// fully in second gear, which is what makes the taper measurable.
+	UPROPERTY(EditAnywhere, Category = "Race|Transmission")
+	float ShiftUpRPM = 2200.0f;
+	UPROPERTY(EditAnywhere, Category = "Race|Transmission")
+	float ShiftDownRPM = 1000.0f;
+
+	// Forward speed above which coasting throttle lift produces engine
+	// braking, cm/s. Above the lift-window entry speed with margin.
+	UPROPERTY(EditAnywhere, Category = "Race|Engine")
+	float EngineBrakeMinSpeed = 200.0f;
+
+	// Reverse gear ratio. Reverse pull stays bounded by the speed cap
+	// and the friction circle.
+	UPROPERTY(EditAnywhere, Category = "Race|Transmission")
+	float ReverseRatio = 3.0f;
+
+	// Fraction of shaft torque reaching the wheels.
+	UPROPERTY(EditAnywhere, Category = "Race|Transmission")
+	float DrivetrainEfficiency = 0.9f;
+
+	// Fixed driven-wheel configuration: indices into Wheels (rear axle).
+	UPROPERTY(EditAnywhere, Category = "Race|Transmission")
+	TArray<int32> DrivenWheelIndices = { 2, 3 };
+
+	// Rolling radius in meters, used for torque-to-force and RPM mapping.
+	UPROPERTY(EditAnywhere, Category = "Race|Wheels")
+	float WheelRadiusM = 0.35f;
+
+	// Small engine-braking request in newtons when coasting.
+	UPROPERTY(EditAnywhere, Category = "Race|Engine")
+	float EngineBrakeForceN = 800.0f;
+
+	// Forward speed above which reverse state releases back to first gear.
+	UPROPERTY(EditAnywhere, Category = "Race|Transmission")
+	float ForwardEngageSpeed = 150.0f;
 
 	// Brake force in newtons, applied against motion.
 	UPROPERTY(EditAnywhere, Category = "Race|Brakes")
@@ -100,9 +166,12 @@ struct FRaceVehicleConfig
 	float SteerYawLow = 110.0f;
 
 	// Speed where steering authority halves, cm/s. Authority follows
-	// 1 / (1 + (speed / ref)^2).
+	// 1 / (1 + (speed / ref)^2). Sized at 600 so the differentiation zone
+	// covers the 2 to 8 m/s exercised by the frozen steer windows; a 1200
+	// reference left both windows near full authority and the rule
+	// unmeasurable. Production calibration is later work.
 	UPROPERTY(EditAnywhere, Category = "Race|Steering")
-	float SteerRefSpeed = 1200.0f;
+	float SteerRefSpeed = 600.0f;
 
 	// Speed below which steering produces no yaw, cm/s.
 	UPROPERTY(EditAnywhere, Category = "Race|Steering")

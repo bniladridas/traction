@@ -31,6 +31,8 @@ namespace
 	constexpr double LowEnd = 11.5;   // Task 3: gentle throttle ends
 	constexpr double LowSteerEnd = 13.0; // Task 3: low-speed steer window ends
 	constexpr double Task3End = 13.5; // Task 3: write results and quit
+	constexpr double LiftEnd = 14.5;   // Task 6: throttle-lift coast window ends
+	constexpr double Task6End = 15.0;  // Task 6: write results and quit
 	constexpr double SampleEvery = 0.25;
 	constexpr double PawnTimeout = 15.0;
 }
@@ -330,6 +332,48 @@ void ATask2Probe::Tick(float Delta)
 				}
 			}
 		}
+		// Task 6 drivetrain sampling.
+		const float RPM = Vehicle->GetEngineRPM();
+		const float TQ = Vehicle->GetEngineTorque();
+		const int32 Gear = Vehicle->GetGearIndex();
+		MaxRPM = FMath::Max(MaxRPM, RPM);
+		MinRPM = FMath::Min(MinRPM, RPM);
+		MaxTorque = FMath::Max(MaxTorque, TQ);
+		MaxShaft = FMath::Max(MaxShaft, Vehicle->GetLastShaftTorque());
+		if (!bGotInitialGear)
+		{
+			bGotInitialGear = true;
+			InitialGearIdx = Gear;
+		}
+		if (Gear >= 0)
+		{
+			MaxGearIdx = FMath::Max(MaxGearIdx, Gear);
+		}
+		else
+		{
+			bRevGearSeen = true;
+		}
+		if (Elapsed > 0.5 && Elapsed <= 3.0)
+		{
+			float DrivenSum = 0.0f;
+			for (const int32 Di : Vehicle->GetVehicleConfig().DrivenWheelIndices)
+			{
+				DrivenSum += Vehicle->GetWheelLongForce(Di);
+			}
+			DriveSum += DrivenSum;
+			ShaftSum += Vehicle->GetLastShaftTorque();
+			DriveN++;
+		}
+		if (Elapsed >= 13.5 && Elapsed <= LiftEnd)
+		{
+			float DrivenSum = 0.0f;
+			for (const int32 Di : Vehicle->GetVehicleConfig().DrivenWheelIndices)
+			{
+				DrivenSum += Vehicle->GetWheelLongForce(Di);
+			}
+			EbSum += DrivenSum;
+			EbN++;
+		}
 		{
 			const float Mu = Vehicle->GetVehicleConfig().FrictionMu;
 			for (int32 wi = 0; wi < 4; ++wi)
@@ -359,13 +403,13 @@ void ATask2Probe::Tick(float Delta)
 		TakeShot(TEXT("02-acceleration.png"), TEXT("acceleration"));
 	}
 
-	if (!bFinalShotTaken && Elapsed >= Task3End - 0.5)
+	if (!bFinalShotTaken && Elapsed >= Task6End - 0.5)
 	{
 		bFinalShotTaken = true;
 		TakeShot(TEXT("05-final.png"), TEXT("final"));
 	}
 
-	if (Elapsed >= Task3End)
+	if (Elapsed >= Task6End)
 	{
 		Finish(true, TEXT("run completed"));
 	}
@@ -543,6 +587,62 @@ void ATask2Probe::WriteResults(bool bOk, const FString& Note) const
 		bGrav, bMass, bBrakeF, bRevB, bSteerR, bWheels);
 	WriteTask5Artifact(bFwd, bBrake, bRev, bSteer, bCam, bReset,
 		bGrav, bMass, bBrakeF, bRevB, bSteerR, bWheels);
+	WriteTask6Artifact(bFwd, bBrake, bRev, bSteer, bCam, bReset,
+		bGrav, bMass, bBrakeF, bRevB, bSteerR, bWheels);
+}
+
+void ATask2Probe::WriteTask6Artifact(bool bFwd, bool bBrake, bool bRev, bool bSteer, bool bCam, bool bReset,
+	bool bGrav, bool bMass, bool bBrakeF, bool bRevB, bool bSteerR, bool bWheels) const
+{
+	const float DriveMean = (DriveN > 0) ? (DriveSum / (float)DriveN) : 0.0f;
+	const float ShaftMean = (DriveN > 0) ? (ShaftSum / (float)DriveN) : 0.0f;
+	const float EbMean = (EbN > 0) ? (EbSum / (float)EbN) : 0.0f;
+	const int32 Ups = Vehicle ? Vehicle->GetUpshiftCount() : 0;
+	const int32 Downs = Vehicle ? Vehicle->GetDownshiftCount() : 0;
+	const int32 MaxGear1 = (MaxGearIdx >= 0) ? (MaxGearIdx + 1) : 0;
+	const int32 InitGear1 = bGotInitialGear ? ((InitialGearIdx >= 0) ? (InitialGearIdx + 1) : InitialGearIdx) : -99;
+
+	const bool bEngResp = (MaxRPM > Task6Limits::RPMResponse) && (MaxTorque > 0.0f);
+	const bool bRpmB = (MinRPM >= Task6Limits::RPMMin) && (MaxRPM <= Task6Limits::RPMMaxOk);
+	const bool bGearP = (MaxGear1 >= Task6Limits::GearMaxMin) && (Ups >= Task6Limits::ShiftsMin) && (Downs >= Task6Limits::ShiftsMin);
+	const bool bRevD = bRevGearSeen;
+	const bool bTorq = (DriveMean > Task6Limits::DriveMeanMin);
+	const bool bEb = (EbMean <= -Task6Limits::EbMin) && (EbMean >= -Task6Limits::EbMax);
+
+	UE_LOG(LogTemp, Display, TEXT("TASK2E2E: T6 rpm[%.0f,%.0f] tq=%.0f gearInit=%d gearMax=%d up=%d down=%d rev=%d drive=%.0f shaft=%.0f eb=%.0f"),
+		MinRPM, MaxRPM, MaxTorque, InitGear1, MaxGear1, Ups, Downs, bRevGearSeen ? 1 : 0,
+		DriveMean, ShaftMean, EbMean);
+
+	const FString Json = FString::Printf(
+		TEXT("{\"engine_rpm_max\":%.0f,\"engine_rpm_min\":%.0f,\"engine_torque_max\":%.0f,")
+		TEXT("\"initial_gear\":%d,\"maximum_forward_gear\":%d,\"reverse_gear\":%s,")
+		TEXT("\"wheel_torque_mean_nm\":%.0f,\"wheel_force_mean_n\":%.0f,")
+		TEXT("\"upshift_count\":%d,\"downshift_count\":%d,\"engine_braking_force_n\":%.0f,")
+		TEXT("\"engine_response\":%s,\"rpm_bounds\":%s,\"gear_progression\":%s,")
+		TEXT("\"reverse_drive\":%s,\"torque_transfer\":%s,\"engine_braking\":%s,")
+		TEXT("\"regression\":{\"forward\":%s,\"brake\":%s,\"reverse\":%s,\"steer\":%s,\"camera\":%s,\"reset\":%s,")
+		TEXT("\"gravity\":%s,\"mass\":%s,\"brake_force\":%s,\"reverse_bound\":%s,\"steer_rule\":%s,\"wheels_state\":%s,")
+		TEXT("\"contact\":%s,\"suspension\":%s,\"load\":%s,\"longitudinal\":%s,\"lateral\":%s,\"combined\":%s}}"),
+		MaxRPM, MinRPM, MaxTorque, InitGear1, MaxGear1, bRevGearSeen ? TEXT("true") : TEXT("false"),
+		ShaftMean, DriveMean, Ups, Downs, EbMean,
+		bEngResp ? TEXT("true") : TEXT("false"), bRpmB ? TEXT("true") : TEXT("false"),
+		bGearP ? TEXT("true") : TEXT("false"), bRevD ? TEXT("true") : TEXT("false"),
+		bTorq ? TEXT("true") : TEXT("false"), bEb ? TEXT("true") : TEXT("false"),
+		bFwd ? TEXT("true") : TEXT("false"), bBrake ? TEXT("true") : TEXT("false"),
+		bRev ? TEXT("true") : TEXT("false"), bSteer ? TEXT("true") : TEXT("false"),
+		bCam ? TEXT("true") : TEXT("false"), bReset ? TEXT("true") : TEXT("false"),
+		bGrav ? TEXT("true") : TEXT("false"), bMass ? TEXT("true") : TEXT("false"),
+		bBrakeF ? TEXT("true") : TEXT("false"), bRevB ? TEXT("true") : TEXT("false"),
+		bSteerR ? TEXT("true") : TEXT("false"), bWheels ? TEXT("true") : TEXT("false"),
+		T5Contact ? TEXT("true") : TEXT("false"), T5Susp ? TEXT("true") : TEXT("false"),
+		T5Load ? TEXT("true") : TEXT("false"), T5Long ? TEXT("true") : TEXT("false"),
+		T5Lat ? TEXT("true") : TEXT("false"), T5Circle ? TEXT("true") : TEXT("false"));
+
+	const FString Dir = FPaths::ProjectSavedDir() + TEXT("Task6E2E/");
+	IPlatformFile& PF = FPlatformFileManager::Get().GetPlatformFile();
+	PF.CreateDirectoryTree(*Dir);
+	FFileHelper::SaveStringToFile(Json, *(Dir + TEXT("results.json")));
+	UE_LOG(LogTemp, Display, TEXT("TASK2E2E: task6 artifact written"));
 }
 
 void ATask2Probe::WriteTask5Artifact(bool bFwd, bool bBrake, bool bRev, bool bSteer, bool bCam, bool bReset,
@@ -569,6 +669,13 @@ void ATask2Probe::WriteTask5Artifact(bool bFwd, bool bBrake, bool bRev, bool bSt
 		&& (RevMean < Task5Limits::RevMeanMax);
 	const bool bLat = (LatMean > Task5Limits::LatMin) && (OpposeFrac >= Task5Limits::OpposeFrac);
 	const bool bCircle = (CircleMinMargin > -Task5Limits::CircleTol);
+
+	T5Contact = bContact;
+	T5Susp = bSusp;
+	T5Load = bLoad;
+	T5Long = bLong;
+	T5Lat = bLat;
+	T5Circle = bCircle;
 
 	UE_LOG(LogTemp, Display, TEXT("TASK2E2E: T5 compr=%.2f range=%.2f load=%.0f/%.0f long=%.0f/%.0f/%.0f lat=%.0f opp=%.2f circ=%.0f"),
 		RestMean, RestRange, RestLoadMean * 4.0f, WeightN, AccelMean, BrakeMean, RevMean,
@@ -610,7 +717,7 @@ void ATask2Probe::WriteTask4Artifact(bool bFwd, bool bBrake, bool bRev, bool bSt
 	const bool bGravOk = FMath::IsNearlyEqual(Cfg.GravityCmS2, 980.0f);
 	const bool bBrakeOk = FMath::IsNearlyEqual(Cfg.BrakeForceN, 14000.0f);
 	const bool bRevOk = FMath::IsNearlyEqual(Cfg.MaxReverseSpeed, 700.0f);
-	const bool bEngOk = Cfg.EngineForcePoints.Num() == 6;
+	const bool bEngOk = Cfg.EngineTorqueCurve.Num() == 14;
 
 	FString WheelJson;
 	bool bWheelsOk = (Cfg.Wheels.Num() == 4);
