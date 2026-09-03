@@ -1,12 +1,18 @@
 # Vehicles: V1 Car
 
-Single simcade car. Chaos or custom `UVehiclePhysicsComponent`.
+Single simcade car. Custom `URaceVehicleMovement` (the template Chaos
+vehicle is retained only for project defaults, not driven).
 
-Body: mass, CoG height, drag, downforce (speed-squared).
-Per wheel: steer angle (front), drive torque (rear-biased), brake force, grip/slip curve, suspension travel/stiffness/damping.
+Body: mass 1200 kg, gravity, rolling + quadratic drag. No aero yet
+(explicitly deferred).
+Per wheel: traced contact, spring-damper suspension
+(travel/stiffness/damping), friction-circle tire forces.
 
-Pipeline: input -> engine (torque curve x gear x final drive) -> wheels -> chassis.
-All params in DataAsset. Keyboard smoothing + gamepad curves. No hardcoded magic.
+Pipeline: input -> `FRaceDriveCommand` -> engine (torque curve x gear x
+final drive, `URaceDrivetrain`) -> driven wheels -> tire forces ->
+chassis. Service brake stays movement-side.
+All params in `FRaceVehicleConfig` (a later DataAsset stores the same
+struct). Keyboard smoothing + gamepad curves. No hardcoded magic.
 
-Cameras: chase (spring arm, speed FOV, collision) + cockpit (wheel/dash visible).
-Audio hooks: RPM, throttle, load, gear, slip ratio.
+Cameras: chase (spring arm) driven; cockpit, speed FOV, and collision
+pending. Audio hooks (RPM, throttle, load, gear, slip) pending.

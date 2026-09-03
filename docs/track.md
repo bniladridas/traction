@@ -1,9 +1,16 @@
 # Track: V1 Circuit
 
-Order: graybox -> road + collision + barriers -> terrain -> racing spline -> props/lighting.
+Status: first circuit built (Task 7). Runtime-built from data, not
+hand-authored.
 
-Required: closed loop, road mesh + collision, barriers, start/finish line,
-sequential checkpoints, AI racing line spline, spawn grid, pit-less layout.
+Order done: graybox road + collision + barriers -> terrain-free lot ->
+centerline + ordered checkpoints -> start/finish with track-owned spawn.
 
-Spline drives laps, positions, and AI. Resample for distance lookups.
-Validate: no lap exploit driving backward or cutting.
+Present: closed loop (~123 m: straights, sweeper, hairpin), road mesh +
+collision, barriers, start/finish line, sequential checkpoints, spawn
+pose, deterministic lap evidenced.
+
+Not yet: racing spline resampled for distance lookups, AI racing line,
+spawn grid, lap/position systems, wrong-way and cut detection (Task 8+).
+
+Validate before racing on it: no lap exploit driving backward or cutting.

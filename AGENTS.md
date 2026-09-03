@@ -6,9 +6,9 @@ Read relevant existing code before editing. Keep changes small and modular.
 2. Small incremental diffs. No speculative architecture or placeholders.
 3. Data-driven tuning: expose params via config/DataAsset, no magic numbers in logic.
 4. Build after every significant change (`UnrealBuildTool` / Xcode build). Report files changed + build result.
-5. Never claim works without verification: cite build log + manual test checklist result.
+5. Never claim works without verification: cite build log + headless E2E evidence (or manual test checklist where interactive runs apply).
 6. Document public interfaces changed.
-7. Prefer UE5 conventions: `ARaceVehicle`, `UVehiclePhysicsComponent`, etc.
+7. Prefer UE5 conventions: `ARaceVehicle`, `URaceVehicleMovement`, etc.
 8. macOS/Metal constraints: ARM-native, no DirectX-only plugins, profile draw calls/shadows.
 9. If blocked (missing asset, engine version mismatch), stop and report. Do not invent workarounds silently.
 

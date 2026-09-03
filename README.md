@@ -21,22 +21,37 @@ until a later rename pass; `traction` is the repository and public identity.
 ## Repo structure
 
 ```text
-racing-game/
+traction/
 ├── README.md
 ├── DESIGN.md
 ├── ROADMAP.md
 ├── AGENTS.md
 ├── docs/
+│   ├── architecture.md      # current system map (Task 7 state)
+│   ├── testing.md           # verification philosophy + regression layers
+│   ├── vehicles.md          # V1 car: custom movement, config, drivetrain
+│   ├── track.md             # V1 circuit: config, collision, checkpoints
 │   ├── gameplay.md
-│   ├── vehicles.md
-│   ├── track.md
 │   ├── graphics.md
 │   ├── audio.md
-│   └── release.md
-└── game/               # UE5 project lives here (not yet created)
+│   ├── release.md
+│   └── verification/        # per-task E2E evidence (tasks 1-7)
+├── site/                    # static project site (GitHub Pages)
+└── game/                    # UE5 project (RacingGame module + template base)
+    └── RacingGame/
+        ├── Source/RacingGame/
+        │   ├── Vehicle/     # pawn, movement, drivetrain, config
+        │   ├── Track/       # track actor + config
+        │   └── Test/        # GameModes + E2E probes (verification only)
+        └── Content/
+            ├── Task2/       # flat prototype map
+            ├── Track/       # first circuit map
+            └── Python/      # headless map-generation scripts
 ```
 
-`game/` is intentionally empty until UE5 project creation in-editor.
+Template content (`Source/TP_VehicleAdv/`, `Content/VehicleTemplate/`,
+`Content/Variant_*`) is retained: project defaults (startup map, default
+map, global GameMode) reference it. Automated runs override via `?game=`.
 
 ## V1 Scope
 
