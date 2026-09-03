@@ -44,6 +44,7 @@ void ARaceVehicle::BeginPlay()
 {
 	Super::BeginPlay();
 	VehicleMovement->SetUpdatedComponent(CollisionBox);
+	VehicleMovement->ApplyConfig(VehicleConfig);
 	SettleToGround();
 	InitialTransform = GetActorTransform();
 }
@@ -99,17 +100,20 @@ void ARaceVehicle::OnSteerAxis(float Value)
 
 void ARaceVehicle::ApplyThrottle(float Value)
 {
-	VehicleMovement->SetThrottle(Value);
+	PendingCommand.Throttle = FMath::Clamp(Value, 0.0f, 1.0f);
+	VehicleMovement->SetDriveCommand(PendingCommand);
 }
 
 void ARaceVehicle::ApplyBrake(float Value)
 {
-	VehicleMovement->SetBrake(Value);
+	PendingCommand.Brake = FMath::Clamp(Value, 0.0f, 1.0f);
+	VehicleMovement->SetDriveCommand(PendingCommand);
 }
 
 void ARaceVehicle::ApplySteering(float Value)
 {
-	VehicleMovement->SetSteering(Value);
+	PendingCommand.Steering = FMath::Clamp(Value, -1.0f, 1.0f);
+	VehicleMovement->SetDriveCommand(PendingCommand);
 }
 
 void ARaceVehicle::ResetVehicle()
@@ -139,4 +143,9 @@ bool ARaceVehicle::IsGrounded() const
 bool ARaceVehicle::GetWheelContact(int32 Index) const
 {
 	return VehicleMovement && VehicleMovement->GetWheelContact(Index);
+}
+
+const FRaceVehicleConfig& ARaceVehicle::GetActiveConfig() const
+{
+	return VehicleMovement->GetActiveConfig();
 }

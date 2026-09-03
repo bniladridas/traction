@@ -9,6 +9,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+#include "RaceVehicleConfig.h"
 #include "RaceVehicle.generated.h"
 
 class UBoxComponent;
@@ -37,7 +38,21 @@ public:
 	float GetVerticalSpeed() const;
 	bool IsGrounded() const;
 	bool GetWheelContact(int32 Index) const;
+
+	// Authoritative configuration for this vehicle instance. A future
+	// variant assigns different values here without new classes.
+	const FRaceVehicleConfig& GetVehicleConfig() const { return VehicleConfig; }
+
+	// Read-only view of what the movement actually consumed.
+	const FRaceVehicleConfig& GetActiveConfig() const;
+
 	UCameraComponent* GetChaseCamera() const { return ChaseCamera; }
+
+protected:
+	// Single authoritative tunable set, edited per instance or subclass.
+	// The movement component receives it through ApplyConfig and owns none.
+	UPROPERTY(EditAnywhere, Category = "Race|Config")
+	FRaceVehicleConfig VehicleConfig;
 
 protected:
 	virtual void BeginPlay() override;
@@ -66,6 +81,10 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Race")
 	URaceVehicleMovement* VehicleMovement;
+
+	// Assembled normalized command. Keyboard callbacks and the harness
+	// both write here; the movement consumes the whole struct.
+	FRaceDriveCommand PendingCommand;
 
 	FTransform InitialTransform;
 };

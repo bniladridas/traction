@@ -1,4 +1,5 @@
-// See header. Task 3 force model; interface unchanged from Task 2.
+// See header. Task 4 refactor: identical integration to Task 3, with all
+// tunables read from ActiveConfig. No behavior tuning in this task.
 
 #include "RaceVehicleMovement.h"
 #include "Engine/World.h"
@@ -8,57 +9,67 @@ bool URaceVehicleMovement::GetWheelContact(int32 Index) const
 	return (Index >= 0 && Index < 4) ? WheelContact[Index] : false;
 }
 
+void URaceVehicleMovement::ApplyConfig(const FRaceVehicleConfig& Config)
+{
+	ActiveConfig = Config;
+	if (ActiveConfig.Wheels.Num() != 4)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("RACEMOVE: config has %d wheels, model expects 4"),
+			ActiveConfig.Wheels.Num());
+	}
+}
+
 float URaceVehicleMovement::EvalEngineForce(float SpeedCmS) const
 {
-	if (EngineForcePoints.Num() == 0)
+	const TArray<FVector2D>& Points = ActiveConfig.EngineForcePoints;
+	if (Points.Num() == 0)
 	{
 		return 0.0f;
 	}
 	const float V = FMath::Max(0.0f, SpeedCmS);
-	if (V <= EngineForcePoints[0].X)
+	if (V <= Points[0].X)
 	{
-		return EngineForcePoints[0].Y;
+		return Points[0].Y;
 	}
-	for (int32 i = 1; i < EngineForcePoints.Num(); ++i)
+	for (int32 i = 1; i < Points.Num(); ++i)
 	{
-		if (V <= EngineForcePoints[i].X)
+		if (V <= Points[i].X)
 		{
-			const FVector2D& A = EngineForcePoints[i - 1];
-			const FVector2D& B = EngineForcePoints[i];
+			const FVector2D& A = Points[i - 1];
+			const FVector2D& B = Points[i];
 			const float T = (V - A.X) / FMath::Max(1.0f, B.X - A.X);
 			return FMath::Lerp(A.Y, B.Y, T);
 		}
 	}
-	return EngineForcePoints.Last().Y;
+	return Points.Last().Y;
 }
 
 void URaceVehicleMovement::UpdateWheelContact()
 {
 	UWorld* World = GetWorld();
-	if (!World || !PawnOwner)
+	if (!World || !PawnOwner || !UpdatedComponent)
 	{
 		return;
 	}
 	const FTransform ActorTM = UpdatedComponent->GetComponentTransform();
-	const float Half[2] = { WheelBaseHalf, -WheelBaseHalf };
-	int32 Idx = 0;
+	const TArray<FRaceWheelConfig>& Wheels = ActiveConfig.Wheels;
 	bool bAny = false;
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(PawnOwner);
-	for (int32 ix = 0; ix < 2; ++ix)
+	for (int32 i = 0; i < 4; ++i)
 	{
-		for (int32 iy = 0; iy < 2; ++iy)
+		WheelContact[i] = false;
+		if (!Wheels.IsValidIndex(i))
 		{
-			const FVector Local(Half[ix], iy == 0 ? TrackHalf : -TrackHalf, WheelRestZ);
-			const FVector Center = ActorTM.TransformPosition(Local);
-			const FVector Start = Center + FVector(0.0f, 0.0f, 30.0f);
-			const FVector End = Center - FVector(0.0f, 0.0f, WheelTraceLength);
-			FHitResult Hit;
-			const bool bHit = World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic, Params);
-			WheelContact[Idx] = bHit;
-			bAny = bAny || bHit;
-			++Idx;
+			continue;
 		}
+		const FVector Center = ActorTM.TransformPosition(Wheels[i].LocalOffset);
+		const FVector Start = Center + FVector(0.0f, 0.0f, 30.0f);
+		const FVector End = Center - FVector(0.0f, 0.0f, ActiveConfig.WheelTraceLength);
+		FHitResult Hit;
+		const bool bHit = World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic, Params);
+		WheelContact[i] = bHit;
+		bAny = bAny || bHit;
 	}
 	bGrounded = bAny;
 }
@@ -67,7 +78,7 @@ void URaceVehicleMovement::TickComponent(float DeltaTime, enum ELevelTick TickTy
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	if (!PawnOwner || !UpdatedComponent || DeltaTime <= 0.0f || MassKg <= 0.0f)
+	if (!PawnOwner || !UpdatedComponent || DeltaTime <= 0.0f || ActiveConfig.MassKg <= 0.0f)
 	{
 		return;
 	}
@@ -75,33 +86,35 @@ void URaceVehicleMovement::TickComponent(float DeltaTime, enum ELevelTick TickTy
 	// Longitudinal force in newtons. Positive drives forward.
 	float Force = 0.0f;
 	float V = ForwardSpeed;
-	if (BrakeInput > 0.0f)
+	const float Throttle = DriveCommand.Throttle;
+	const float Brake = DriveCommand.Brake;
+	if (Brake > 0.0f)
 	{
-		if (V > ReverseEngageSpeed)
+		if (V > ActiveConfig.ReverseEngageSpeed)
 		{
-			Force = -BrakeInput * BrakeForceN;
+			Force = -Brake * ActiveConfig.BrakeForceN;
 		}
 		else
 		{
-			Force = -BrakeInput * ReverseForceN;
+			Force = -Brake * ActiveConfig.ReverseForceN;
 		}
 	}
-	else if (ThrottleInput > 0.0f)
+	else if (Throttle > 0.0f)
 	{
 		if (V < 0.0f)
 		{
 			// Throttle while reversing brakes toward standstill.
-			Force = ThrottleInput * BrakeForceN;
+			Force = Throttle * ActiveConfig.BrakeForceN;
 		}
 		else
 		{
-			Force = ThrottleInput * EvalEngineForce(V);
+			Force = Throttle * EvalEngineForce(V);
 		}
 	}
 
 	// Resistances in newtons oppose motion. Speed in m/s for the curve terms.
 	const float Vms = V / 100.0f;
-	const float Resist = RollingResistanceN + AeroDragCoeff * Vms * FMath::Abs(Vms);
+	const float Resist = ActiveConfig.RollingResistanceN + ActiveConfig.AeroDragCoeff * Vms * FMath::Abs(Vms);
 	float Net = Force;
 	if (V > 0.0f)
 	{
@@ -122,7 +135,7 @@ void URaceVehicleMovement::TickComponent(float DeltaTime, enum ELevelTick TickTy
 
 	// Semi-implicit Euler: force -> accel -> velocity.
 	const float VOld = V;
-	V += (Net / MassKg) * 100.0f * DeltaTime;
+	V += (Net / ActiveConfig.MassKg) * 100.0f * DeltaTime;
 	if (VOld > 0.0f && Force >= 0.0f && V < 0.0f)
 	{
 		// Drag alone never reverses direction within one step.
@@ -132,11 +145,11 @@ void URaceVehicleMovement::TickComponent(float DeltaTime, enum ELevelTick TickTy
 	{
 		V = 0.0f;
 	}
-	V = FMath::Clamp(V, -MaxReverseSpeed, MaxSpeed);
+	V = FMath::Clamp(V, -ActiveConfig.MaxReverseSpeed, ActiveConfig.MaxSpeed);
 
 	// Vertical: gravity with ground contact. Blocking hits with an upward
 	// normal while falling land the vehicle and clear vertical speed.
-	float Vz = VerticalSpeed - GravityCmS2 * DeltaTime;
+	float Vz = VerticalSpeed - ActiveConfig.GravityCmS2 * DeltaTime;
 	if (bGrounded && Vz < 0.0f)
 	{
 		// Resting contact: do not push into the floor every tick. A
@@ -147,19 +160,18 @@ void URaceVehicleMovement::TickComponent(float DeltaTime, enum ELevelTick TickTy
 	FVector Delta = UpdatedComponent->GetForwardVector() * V * DeltaTime;
 	Delta.Z += Vz * DeltaTime;
 
-	// Speed-sensitive steering. Authority is full near standstill speed,
-	// halves at SteerRefSpeed, and vanishes below SteerDeadSpeed.
-	// Reversing mirrors the yaw direction.
+	// Speed-sensitive steering. Authority is full near standstill speed
+	// and halves at the configured reference speed.
 	const float AbsV = FMath::Abs(V);
 	float Authority = 0.0f;
-	if (AbsV >= SteerDeadSpeed)
+	if (AbsV >= ActiveConfig.SteerDeadSpeed)
 	{
-		const float R = AbsV / SteerRefSpeed;
+		const float R = AbsV / ActiveConfig.SteerRefSpeed;
 		Authority = 1.0f / (1.0f + R * R);
 	}
 	const float Direction = (V >= 0.0f) ? 1.0f : -1.0f;
 	FRotator NewRotation = UpdatedComponent->GetComponentRotation();
-	NewRotation.Yaw += SteeringInput * SteerYawLow * Authority * Direction * DeltaTime;
+	NewRotation.Yaw += DriveCommand.Steering * ActiveConfig.SteerYawLow * Authority * Direction * DeltaTime;
 
 	FHitResult Hit(1.0f);
 	SafeMoveUpdatedComponent(Delta, NewRotation.Quaternion(), true, Hit);
