@@ -6,6 +6,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
+#include "Engine/World.h"
 #include "UObject/ConstructorHelpers.h"
 
 ARaceVehicle::ARaceVehicle()
@@ -42,8 +43,28 @@ ARaceVehicle::ARaceVehicle()
 void ARaceVehicle::BeginPlay()
 {
 	Super::BeginPlay();
-	InitialTransform = GetActorTransform();
 	VehicleMovement->SetUpdatedComponent(CollisionBox);
+	SettleToGround();
+	InitialTransform = GetActorTransform();
+}
+
+void ARaceVehicle::SettleToGround()
+{
+	UWorld* World = GetWorld();
+	if (!World || !CollisionBox)
+	{
+		return;
+	}
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+	FHitResult Hit;
+	const FVector Loc = GetActorLocation();
+	if (World->LineTraceSingleByChannel(Hit, Loc, Loc - FVector(0.0f, 0.0f, 500.0f), ECC_WorldStatic, Params))
+	{
+		FVector Settled = Loc;
+		Settled.Z = Hit.Location.Z + CollisionBox->GetScaledBoxExtent().Z;
+		SetActorLocation(Settled, false, nullptr, ETeleportType::TeleportPhysics);
+	}
 }
 
 void ARaceVehicle::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -103,4 +124,19 @@ void ARaceVehicle::ResetVehicle()
 float ARaceVehicle::GetForwardSpeed() const
 {
 	return VehicleMovement ? VehicleMovement->GetForwardSpeed() : 0.0f;
+}
+
+float ARaceVehicle::GetVerticalSpeed() const
+{
+	return VehicleMovement ? VehicleMovement->GetVerticalSpeed() : 0.0f;
+}
+
+bool ARaceVehicle::IsGrounded() const
+{
+	return VehicleMovement && VehicleMovement->IsGrounded();
+}
+
+bool ARaceVehicle::GetWheelContact(int32 Index) const
+{
+	return VehicleMovement && VehicleMovement->GetWheelContact(Index);
 }

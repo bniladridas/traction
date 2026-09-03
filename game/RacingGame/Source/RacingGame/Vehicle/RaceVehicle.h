@@ -34,6 +34,9 @@ public:
 	void ResetVehicle();
 
 	float GetForwardSpeed() const;
+	float GetVerticalSpeed() const;
+	bool IsGrounded() const;
+	bool GetWheelContact(int32 Index) const;
 	UCameraComponent* GetChaseCamera() const { return ChaseCamera; }
 
 protected:
@@ -44,6 +47,10 @@ private:
 	// Legacy axis callbacks (see DefaultInput.ini RaceThrottle/RaceSteer).
 	void OnThrottleAxis(float Value);
 	void OnSteerAxis(float Value);
+
+	// Places the box bottom exactly on the ground below spawn and is the
+	// basis for the reset transform. Deterministic on the flat test track.
+	void SettleToGround();
 
 	UPROPERTY(VisibleAnywhere, Category = "Race")
 	UBoxComponent* CollisionBox;
