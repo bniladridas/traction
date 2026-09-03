@@ -20,7 +20,8 @@ public class RacingGame : ModuleRules
 		PublicIncludePaths.AddRange(new string[] {
 			"RacingGame",
 			"RacingGame/Vehicle",
-			"RacingGame/Test"
+			"RacingGame/Test",
+			"RacingGame/Track"
 		});
 	}
 }
