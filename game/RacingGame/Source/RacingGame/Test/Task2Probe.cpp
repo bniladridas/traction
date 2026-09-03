@@ -275,6 +275,72 @@ void ATask2Probe::Tick(float Delta)
 		LastV = SSpeed;
 		LastT = Elapsed;
 		bHaveLast = true;
+
+		// Task 5 wheel/tire sampling.
+		const FVector TireTot = Vehicle->GetTotalTireForce();
+		if (Elapsed <= 0.5)
+		{
+			for (int32 wi = 0; wi < 4; ++wi)
+			{
+				const float C = Vehicle->GetWheelCompression(wi);
+				RestComprSum += C;
+				RestComprN++;
+				RestComprMin = FMath::Min(RestComprMin, C);
+				RestComprMax = FMath::Max(RestComprMax, C);
+				RestLoadSum += Vehicle->GetWheelNormalLoad(wi);
+				RestLoadN++;
+				const FVector P = Vehicle->GetWheelContactPoint(wi);
+				const FVector N = Vehicle->GetWheelContactNormal(wi);
+				RestContactN++;
+				if (Vehicle->GetWheelContact(wi) && !P.ContainsNaN() && !N.ContainsNaN() && N.Z > Task5Limits::ContactNormMinZ)
+				{
+					RestContactOk++;
+				}
+			}
+		}
+		if (Elapsed > 0.5 && Elapsed <= 3.0)
+		{
+			AccelLongSum += FMath::Abs(TireTot.X);
+			AccelLongN++;
+		}
+		if (Elapsed >= 3.0 && Elapsed <= 4.0)
+		{
+			BrakeLongSum += TireTot.X;
+			BrakeLongN++;
+		}
+		if (Elapsed >= 4.5 && Elapsed <= 6.5)
+		{
+			RevLongSum += TireTot.X;
+			RevLongN++;
+		}
+		if (Elapsed >= 7.5 && Elapsed <= 10.0)
+		{
+			SteerLatSum += FMath::Abs(TireTot.Y);
+			SteerLatN++;
+			// Centripetal criterion (revised after run 1; see verification
+			// report): lateral force must act toward the turn center, i.e.
+			// share the sign of the measured yaw rate while turning.
+			const float YawR = Vehicle->GetYawRate();
+			if (FMath::Abs(YawR) > 1.0f)
+			{
+				SteerOpposeN++;
+				if (FMath::Sign(TireTot.Y) == FMath::Sign(YawR))
+				{
+					SteerOpposeOk++;
+				}
+			}
+		}
+		{
+			const float Mu = Vehicle->GetVehicleConfig().FrictionMu;
+			for (int32 wi = 0; wi < 4; ++wi)
+			{
+				const float Fl = Vehicle->GetWheelLongForce(wi);
+				const float Flat = Vehicle->GetWheelLatForce(wi);
+				const float Nl = Vehicle->GetWheelNormalLoad(wi);
+				const float Margin = Mu * Nl - FMath::Sqrt(Fl * Fl + Flat * Flat);
+				CircleMinMargin = FMath::Min(CircleMinMargin, Margin);
+			}
+		}
 	}
 
 	if (!bGotV10 && Elapsed >= 1.0) { bGotV10 = true; VAt10 = Vehicle->GetForwardSpeed(); }
@@ -475,6 +541,63 @@ void ATask2Probe::WriteResults(bool bOk, const FString& Note) const
 
 	WriteTask4Artifact(bFwd, bBrake, bRev, bSteer, bCam, bReset,
 		bGrav, bMass, bBrakeF, bRevB, bSteerR, bWheels);
+	WriteTask5Artifact(bFwd, bBrake, bRev, bSteer, bCam, bReset,
+		bGrav, bMass, bBrakeF, bRevB, bSteerR, bWheels);
+}
+
+void ATask2Probe::WriteTask5Artifact(bool bFwd, bool bBrake, bool bRev, bool bSteer, bool bCam, bool bReset,
+	bool bGrav, bool bMass, bool bBrakeF, bool bRevB, bool bSteerR, bool bWheels) const
+{
+	const float RestMean = (RestComprN > 0) ? (RestComprSum / (float)RestComprN) : -1.0f;
+	const float RestRange = (RestComprN > 0) ? (RestComprMax - RestComprMin) : -1.0f;
+	const float RestLoadMean = (RestLoadN > 0) ? (RestLoadSum / (float)RestLoadN) : -1.0f;
+	const float ContactFrac = (RestContactN > 0) ? (float)RestContactOk / (float)RestContactN : 0.0f;
+	const float AccelMean = (AccelLongN > 0) ? (AccelLongSum / (float)AccelLongN) : 0.0f;
+	const float BrakeMean = (BrakeLongN > 0) ? (BrakeLongSum / (float)BrakeLongN) : 0.0f;
+	const float RevMean = (RevLongN > 0) ? (RevLongSum / (float)RevLongN) : 0.0f;
+	const float LatMean = (SteerLatN > 0) ? (SteerLatSum / (float)SteerLatN) : 0.0f;
+	const float OpposeFrac = (SteerOpposeN > 0) ? (float)SteerOpposeOk / (float)SteerOpposeN : 0.0f;
+	const float Mass = Vehicle ? Vehicle->GetVehicleConfig().MassKg : 0.0f;
+	const float WeightN = Mass * 9.8f;
+	const float LoadErr = (WeightN > 0.0f && RestLoadN > 0) ? FMath::Abs(RestLoadMean * 4.0f - WeightN) / WeightN : 1.0f;
+
+	const bool bContact = (RestContactN > 0) && (ContactFrac >= Task5Limits::ContactFrac - 1e-6f);
+	const bool bSusp = (RestMean > Task5Limits::ComprMin) && (RestComprMax <= Task5Limits::ComprMax)
+		&& (RestRange >= 0.0f) && (RestRange < Task5Limits::OscMaxRange);
+	const bool bLoad = (LoadErr < Task5Limits::LoadTotalTol) && (RestLoadMean > 0.0f);
+	const bool bLong = (AccelMean > Task5Limits::LongMin) && (BrakeMean < -Task5Limits::LongMin)
+		&& (RevMean < Task5Limits::RevMeanMax);
+	const bool bLat = (LatMean > Task5Limits::LatMin) && (OpposeFrac >= Task5Limits::OpposeFrac);
+	const bool bCircle = (CircleMinMargin > -Task5Limits::CircleTol);
+
+	UE_LOG(LogTemp, Display, TEXT("TASK2E2E: T5 compr=%.2f range=%.2f load=%.0f/%.0f long=%.0f/%.0f/%.0f lat=%.0f opp=%.2f circ=%.0f"),
+		RestMean, RestRange, RestLoadMean * 4.0f, WeightN, AccelMean, BrakeMean, RevMean,
+		LatMean, OpposeFrac, CircleMinMargin);
+
+	const FString Json = FString::Printf(
+		TEXT("{\"contact_ok\":%s,\"susp_ok\":%s,\"load_ok\":%s,\"long_ok\":%s,\"lat_ok\":%s,\"circle_ok\":%s,")
+		TEXT("\"rest_compr_mean_cm\":%.2f,\"rest_compr_range_cm\":%.2f,\"rest_load_total_n\":%.0f,\"weight_n\":%.0f,")
+		TEXT("\"long_accel_mean_n\":%.0f,\"long_brake_mean_n\":%.0f,\"long_rev_mean_n\":%.0f,")
+		TEXT("\"lat_mean_n\":%.0f,\"oppose_frac\":%.3f,\"circle_min_margin_n\":%.0f,")
+		TEXT("\"regression\":{\"forward\":%s,\"brake\":%s,\"reverse\":%s,\"steer\":%s,\"camera\":%s,\"reset\":%s,")
+		TEXT("\"gravity\":%s,\"mass\":%s,\"brake_force\":%s,\"reverse_bound\":%s,\"steer_rule\":%s,\"wheels_state\":%s}}"),
+		bContact ? TEXT("true") : TEXT("false"), bSusp ? TEXT("true") : TEXT("false"),
+		bLoad ? TEXT("true") : TEXT("false"), bLong ? TEXT("true") : TEXT("false"),
+		bLat ? TEXT("true") : TEXT("false"), bCircle ? TEXT("true") : TEXT("false"),
+		RestMean, RestRange, RestLoadMean * 4.0f, WeightN,
+		AccelMean, BrakeMean, RevMean, LatMean, OpposeFrac, CircleMinMargin,
+		bFwd ? TEXT("true") : TEXT("false"), bBrake ? TEXT("true") : TEXT("false"),
+		bRev ? TEXT("true") : TEXT("false"), bSteer ? TEXT("true") : TEXT("false"),
+		bCam ? TEXT("true") : TEXT("false"), bReset ? TEXT("true") : TEXT("false"),
+		bGrav ? TEXT("true") : TEXT("false"), bMass ? TEXT("true") : TEXT("false"),
+		bBrakeF ? TEXT("true") : TEXT("false"), bRevB ? TEXT("true") : TEXT("false"),
+		bSteerR ? TEXT("true") : TEXT("false"), bWheels ? TEXT("true") : TEXT("false"));
+
+	const FString Dir = FPaths::ProjectSavedDir() + TEXT("Task5E2E/");
+	IPlatformFile& PF = FPlatformFileManager::Get().GetPlatformFile();
+	PF.CreateDirectoryTree(*Dir);
+	FFileHelper::SaveStringToFile(Json, *(Dir + TEXT("results.json")));
+	UE_LOG(LogTemp, Display, TEXT("TASK2E2E: task5 artifact written"));
 }
 
 void ATask2Probe::WriteTask4Artifact(bool bFwd, bool bBrake, bool bRev, bool bSteer, bool bCam, bool bReset,

@@ -57,6 +57,34 @@ namespace Task3Limits
 	constexpr float SteerRatioMax = 0.8f;
 }
 
+namespace Task5Limits
+{
+	// All thresholds below were fixed before the first Task 5 passing run.
+	// Contact: points finite, normals valid (Z over 0.9 on the flat track),
+	// every rest-window sample across all four wheels.
+	constexpr float ContactNormMinZ = 0.9f;
+	constexpr float ContactFrac = 1.0f;
+	// Suspension: rest compression measurable (over 0.5 cm) and inside the
+	// 12 cm travel; oscillation range under 2.0 cm in the rest window.
+	constexpr float ComprMin = 0.5f;
+	constexpr float ComprMax = 12.0f;
+	constexpr float OscMaxRange = 2.0f;
+	// Normal load: total support within 15 percent of vehicle weight.
+	constexpr float LoadTotalTol = 0.15f;
+	// Longitudinal: mean magnitudes over 1000 N in each window; reverse
+	// force opposite in sign (under -500 N mean).
+	constexpr float LongMin = 1000.0f;
+	constexpr float RevMeanMax = -500.0f;
+	// Lateral: mean magnitude over 200 N with force acting toward the turn
+	// center (same sign as yaw rate) in at least 80 percent of turning
+	// samples. Revised from a slip-opposition form after run 1 showed that
+	// form assumes quasi-steady cornering; see the verification report.
+	constexpr float LatMin = 200.0f;
+	constexpr float OpposeFrac = 0.8f;
+	// Combined: no wheel exceeds mu*N by over 50 N at any sample.
+	constexpr float CircleTol = 50.0f;
+}
+
 UCLASS()
 class RACINGGAME_API ATask2Probe : public AActor
 {
@@ -74,6 +102,10 @@ private:
 	// Task 4 architecture evidence: configuration audit plus regression
 	// flag copies. Separate artifact; the Task 2/3 schema is untouched.
 	void WriteTask4Artifact(bool bFwd, bool bBrake, bool bRev, bool bSteer, bool bCam, bool bReset,
+		bool bGrav, bool bMass, bool bBrakeF, bool bRevB, bool bSteerR, bool bWheels) const;
+	// Task 5 architecture evidence: wheel/tire metrics plus regression
+	// flag copies. Separate artifact; earlier schemas untouched.
+	void WriteTask5Artifact(bool bFwd, bool bBrake, bool bRev, bool bSteer, bool bCam, bool bReset,
 		bool bGrav, bool bMass, bool bBrakeF, bool bRevB, bool bSteerR, bool bWheels) const;
 	// Rendered-capture infrastructure (Task 2 screenshots addition).
 	// Records real renderer frames only; under nullrhi no PNGs materialize.
@@ -130,4 +162,25 @@ private:
 	bool bHaveLast = false;
 	float YawAt85 = 0.0f, YawAt100 = 0.0f, YawAt115 = 0.0f, YawAt130 = 0.0f;
 	bool bGotY85 = false, bGotY100 = false, bGotY115 = false, bGotY130 = false;
+
+	// Task 5 wheel/tire metrics (additive; earlier fields untouched).
+	float RestComprSum = 0.0f;
+	int32 RestComprN = 0;
+	float RestComprMin = 1e9f;
+	float RestComprMax = -1e9f;
+	float RestLoadSum = 0.0f;
+	int32 RestLoadN = 0;
+	int32 RestContactOk = 0;
+	int32 RestContactN = 0;
+	float AccelLongSum = 0.0f;
+	int32 AccelLongN = 0;
+	float BrakeLongSum = 0.0f;
+	int32 BrakeLongN = 0;
+	float RevLongSum = 0.0f;
+	int32 RevLongN = 0;
+	float SteerLatSum = 0.0f;
+	int32 SteerLatN = 0;
+	int32 SteerOpposeOk = 0;
+	int32 SteerOpposeN = 0;
+	float CircleMinMargin = 1e9f;
 };

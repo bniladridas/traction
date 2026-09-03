@@ -130,6 +130,21 @@ float ARaceVehicle::GetForwardSpeed() const
 	return VehicleMovement ? VehicleMovement->GetForwardSpeed() : 0.0f;
 }
 
+float ARaceVehicle::GetLateralSpeed() const
+{
+	return VehicleMovement ? VehicleMovement->GetLateralSpeed() : 0.0f;
+}
+
+float ARaceVehicle::GetYawRate() const
+{
+	return VehicleMovement ? VehicleMovement->GetYawRate() : 0.0f;
+}
+
+FVector ARaceVehicle::GetTotalTireForce() const
+{
+	return VehicleMovement ? VehicleMovement->GetTotalTireForce() : FVector::ZeroVector;
+}
+
 float ARaceVehicle::GetVerticalSpeed() const
 {
 	return VehicleMovement ? VehicleMovement->GetVerticalSpeed() : 0.0f;
@@ -143,6 +158,36 @@ bool ARaceVehicle::IsGrounded() const
 bool ARaceVehicle::GetWheelContact(int32 Index) const
 {
 	return VehicleMovement && VehicleMovement->GetWheelContact(Index);
+}
+
+float ARaceVehicle::GetWheelCompression(int32 Index) const
+{
+	return VehicleMovement ? VehicleMovement->GetWheelCompression(Index) : 0.0f;
+}
+
+float ARaceVehicle::GetWheelNormalLoad(int32 Index) const
+{
+	return VehicleMovement ? VehicleMovement->GetWheelNormalLoad(Index) : 0.0f;
+}
+
+float ARaceVehicle::GetWheelLongForce(int32 Index) const
+{
+	return VehicleMovement ? VehicleMovement->GetWheelLongForce(Index) : 0.0f;
+}
+
+float ARaceVehicle::GetWheelLatForce(int32 Index) const
+{
+	return VehicleMovement ? VehicleMovement->GetWheelLatForce(Index) : 0.0f;
+}
+
+FVector ARaceVehicle::GetWheelContactPoint(int32 Index) const
+{
+	return VehicleMovement ? VehicleMovement->GetWheelContactPoint(Index) : FVector::ZeroVector;
+}
+
+FVector ARaceVehicle::GetWheelContactNormal(int32 Index) const
+{
+	return VehicleMovement ? VehicleMovement->GetWheelContactNormal(Index) : FVector::UpVector;
 }
 
 const FRaceVehicleConfig& ARaceVehicle::GetActiveConfig() const

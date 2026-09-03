@@ -35,9 +35,18 @@ public:
 	void ResetVehicle();
 
 	float GetForwardSpeed() const;
+	float GetLateralSpeed() const;
+	float GetYawRate() const;
 	float GetVerticalSpeed() const;
 	bool IsGrounded() const;
 	bool GetWheelContact(int32 Index) const;
+	float GetWheelCompression(int32 Index) const;
+	float GetWheelNormalLoad(int32 Index) const;
+	float GetWheelLongForce(int32 Index) const;
+	float GetWheelLatForce(int32 Index) const;
+	FVector GetWheelContactPoint(int32 Index) const;
+	FVector GetWheelContactNormal(int32 Index) const;
+	FVector GetTotalTireForce() const;
 
 	// Authoritative configuration for this vehicle instance. A future
 	// variant assigns different values here without new classes.

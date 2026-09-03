@@ -81,9 +81,11 @@ struct FRaceVehicleConfig
 	UPROPERTY(EditAnywhere, Category = "Race|Brakes")
 	float BrakeForceN = 14000.0f;
 
-	// Reverse drive force in newtons, bounded by MaxReverseSpeed.
+	// Reverse drive force in newtons, bounded by MaxReverseSpeed. Sized
+	// strong with a low cap, like a short reverse gear: brisk pull that
+	// the speed cap and the friction circle keep bounded.
 	UPROPERTY(EditAnywhere, Category = "Race|Brakes")
-	float ReverseForceN = 3000.0f;
+	float ReverseForceN = 6000.0f;
 
 	// Reverse speed cap, cm/s (positive value).
 	UPROPERTY(EditAnywhere, Category = "Race|Brakes")
@@ -130,4 +132,37 @@ struct FRaceVehicleConfig
 		{ FName(TEXT("RL")), FVector(-70.0f, 75.0f, -30.0f), false, true },
 		{ FName(TEXT("RR")), FVector(-70.0f, -75.0f, -30.0f), false, false }
 	};
+
+	// Suspension rest length, cm: hardpoint-to-contact distance at zero
+	// load. Sized so static compression absorbs roughly half the travel.
+	UPROPERTY(EditAnywhere, Category = "Race|Suspension")
+	float SuspRestLengthCm = 20.0f;
+
+	// Suspension travel limits, cm.
+	UPROPERTY(EditAnywhere, Category = "Race|Suspension")
+	float SuspMaxCompressionCm = 12.0f;
+	UPROPERTY(EditAnywhere, Category = "Race|Suspension")
+	float SuspMaxExtensionCm = 8.0f;
+
+	// Spring stiffness in N/m.
+	UPROPERTY(EditAnywhere, Category = "Race|Suspension")
+	float SpringStiffnessNpm = 30000.0f;
+
+	// Damping coefficient in N s/m, opposing compression velocity.
+	UPROPERTY(EditAnywhere, Category = "Race|Suspension")
+	float DampingCoeffNspm = 3000.0f;
+
+	// Tire friction coefficient for the combined-force circle.
+	UPROPERTY(EditAnywhere, Category = "Race|Tire")
+	float FrictionMu = 1.0f;
+
+	// Lateral stiffness in N per (m/s) of lateral slip velocity.
+	UPROPERTY(EditAnywhere, Category = "Race|Tire")
+	float LateralStiffness = 8000.0f;
+
+	// Front-wheel steer angle at full steering input, degrees. Positive
+	// input steers toward vehicle right (+Y). Speed sensitivity lives in
+	// the yaw rule, not in this geometric angle.
+	UPROPERTY(EditAnywhere, Category = "Race|Steering")
+	float MaxSteerAngleDeg = 30.0f;
 };
