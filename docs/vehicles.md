@@ -11,8 +11,10 @@ Per wheel: traced contact, spring-damper suspension
 Pipeline: input -> `FRaceDriveCommand` -> engine (torque curve x gear x
 final drive, `URaceDrivetrain`) -> driven wheels -> tire forces ->
 chassis. Service brake stays movement-side.
-All params in `FRaceVehicleConfig` (a later DataAsset stores the same
-struct). Keyboard smoothing + gamepad curves. No hardcoded magic.
+All params in `FRaceVehicleConfig`. A DataAsset storing the same struct
+remains a possible later step, not current architecture.
+Keyboard smoothing + gamepad curves. No hardcoded magic.
 
-Cameras: chase (spring arm) driven; cockpit, speed FOV, and collision
-pending. Audio hooks (RPM, throttle, load, gear, slip) pending.
+Cameras: chase driver on every pawn including AI (Task 10: look-ahead,
+smoothing, reset snap). Cockpit, speed FOV, and collision remain future.
+Audio hooks (RPM, throttle, load, gear, slip) pending.

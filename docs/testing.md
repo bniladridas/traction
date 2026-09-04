@@ -4,8 +4,8 @@ Three verification categories, never mixed:
 
 1. **Functional**: does the behavior happen? Headless standalone runs with
    scripted input through the real gameplay path, transform logs, and
-   `results.json` with predefined thresholds. Example: 1238.3 cm forward
-   displacement with a 0.006 brake ratio on the Task 6 baseline.
+   `results.json` with predefined thresholds. Current suite: 52 flags
+   across eight artifacts (see the frozen layers below).
 
 ## Regression layers (frozen, cumulative)
 
