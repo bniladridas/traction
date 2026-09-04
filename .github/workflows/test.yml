@@ -13,8 +13,12 @@ on:
     paths:
       - "game/RacingGame/Source/**"
       - "game/RacingGame/Content/**"
+      - "game/RacingGame/*.uproject"
+      - "game/RacingGame/Config/**"
+      - "tools/**"
       - "docs/**"
       - ".github/**"
+      - "*.md"
   pull_request:
   workflow_dispatch:
 
