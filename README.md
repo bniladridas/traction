@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/bniladridas/traction/main/.github/assets/thumbnail.png" alt="traction" width="100%">
+</p>
+
 # traction
 
 A realistic simcade racing game for macOS.
