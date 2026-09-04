@@ -23,6 +23,10 @@ tasks add layers; none edit earlier ones.
 - Task 7 (`Saved/Task7E2E/`): track load, road contact, start
   alignment, centerline validity, checkpoint order, lap traversal on
   the circuit map.
+- Task 8 (`Saved/Task8E2E/`): ready, countdown, racing, order, wrong
+  order, single increment, no double, reset, finish, lock.
+- Task 9 (`Saved/Task9E2E/`): AI spawned, progress, lap, validity,
+  recovery, timing on the AI map.
 
 CI (`test.yml`) validates repository invariants on GitHub-hosted runners:
 verification docs, frozen threshold namespaces, headers, tooling syntax,
@@ -50,9 +54,10 @@ GenerateProjectFiles.sh -project="game/RacingGame/RacingGame.uproject" -game -en
 Build.sh TP_VehicleAdvEditor Mac Development -project="game/RacingGame/RacingGame.uproject"
 ```
 
-Run all three E2E programs (flat map, circuit map, race-state map),
-then require every flag true across all six artifacts (30 frozen
-regression flags plus 10 Task 8 gates):
+Run all four E2E programs (flat map, circuit map, race-state map, AI
+map),
+then require every flag true across all seven artifacts (30 frozen
+regression flags plus 10 Task 8 gates plus 6 Task 9 gates):
 
 ```text
 python3 tools/check_regression.py

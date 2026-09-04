@@ -1,7 +1,8 @@
 """Local regression check for traction (runs on the Mac, not in CI).
-Reads the six headless E2E artifacts produced by the three local runs
-(flat map, circuit map, race-state map) and fails unless every flag is
-true: 30 frozen regression flags plus 10 Task 8 gates.
+Reads the seven headless E2E artifacts produced by the four local runs
+(flat map, circuit map, race-state map, AI map) and fails unless every
+flag is true: 30 frozen regression flags plus 10 Task 8 gates plus
+6 Task 9 gates.
 Usage from the repo root: python3 tools/check_regression.py
 """
 import json
@@ -22,6 +23,8 @@ T8_KEYS = ['starts_ready', 'countdown_ok', 'racing_begins',
            'checkpoint_order', 'wrong_order_ignored', 'single_increment',
            'no_double_count', 'reset_behavior', 'finish_transition',
            'finished_locked']
+T9_KEYS = ['ai_spawned', 'ai_progress', 'ai_lap', 'ai_valid',
+           'ai_recovery', 'ai_timing']
 
 
 def load(name):
@@ -35,11 +38,13 @@ def main():
     t6 = load('Task6E2E')
     t7 = load('Task7E2E')
     t8 = load('Task8E2E')
+    t9 = load('Task9E2E')
     flags = ([t2[k] for k in T2_KEYS] + [t2[k] for k in T3_KEYS]
              + [t5[k] for k in T5_KEYS] + [t6[k] for k in T6_KEYS]
-             + [t7[k] for k in T7_KEYS] + [t8[k] for k in T8_KEYS])
+             + [t7[k] for k in T7_KEYS] + [t8[k] for k in T8_KEYS]
+             + [t9[k] for k in T9_KEYS])
     print('%d flags: %s' % (len(flags), flags))
-    ok = len(flags) == 40 and all(flags) and t2['reached_end']
+    ok = len(flags) == 46 and all(flags) and t2['reached_end']
     print('PASS' if ok else 'FAIL')
     return 0 if ok else 1
 
