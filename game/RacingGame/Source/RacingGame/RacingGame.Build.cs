@@ -21,7 +21,8 @@ public class RacingGame : ModuleRules
 			"RacingGame",
 			"RacingGame/Vehicle",
 			"RacingGame/Test",
-			"RacingGame/Track"
+			"RacingGame/Track",
+			"RacingGame/Race"
 		});
 	}
 }
