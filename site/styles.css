@@ -31,13 +31,13 @@ header p { color: var(--muted); margin: 0 0 0.75rem; }
 nav a { margin-right: 1rem; }
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
-section { padding: 1.25rem 0; border-bottom: 1px solid var(--line); }
-h2 { font-size: 1.2rem; margin: 0 0 0.5rem; }
+section { padding: 1.5rem 0; border-bottom: 1px solid var(--line); }
+h2 { font-size: 1.2rem; margin: 0 0 0.75rem; letter-spacing: -0.01em; }
 ul, ol { padding-left: 1.4rem; margin: 0.5rem 0; }
-code { font-size: 0.9em; }
-table { border-collapse: collapse; width: 100%; font-size: 0.9rem; margin: 0.5rem 0; }
+code { font-size: 0.9em; background: color-mix(in srgb, var(--line) 35%, transparent); padding: 0.1em 0.35em; border-radius: 4px; }
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; margin: 0.75rem 0; }
 th, td { border: 1px solid var(--line); padding: 0.4rem 0.6rem; text-align: left; }
-th { font-weight: 600; }
+th { font-weight: 600; background: color-mix(in srgb, var(--line) 35%, transparent); }
 footer { color: var(--muted); font-size: 0.85rem; padding-top: 1rem; }
 @media (max-width: 560px) {
   body { padding: 1.25rem 1rem 3rem; }
