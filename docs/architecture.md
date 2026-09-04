@@ -15,6 +15,9 @@ game/RacingGame/Source/
 │   │   ├── RaceVehicleMovement.*  # force model + suspension + tires + integration
 │   │   ├── RaceDrivetrain.*       # engine, transmission, differential
 │   │   └── RaceVehicleConfig.*    # FRaceVehicleConfig: single tunable set
+│   ├── Camera/
+│   │   ├── RaceChaseCamera.*      # look-ahead chase driver (reads pawn only)
+│   │   └── RaceCameraConfig.*     # FRaceCameraConfig: chase tuning
 │   ├── Track/
 │   │   ├── RaceTrack.*            # circuit actor: collision, centerline, checkpoints
 │   │   └── RaceTrackConfig.*      # FRaceTrackConfig: single track data set
@@ -63,6 +66,16 @@ checkpoints, and the start pose from `FRaceTrackConfig` at BeginPlay.
 The movement never sees track geometry; it meets the road only through
 wheel traces. The track GameMode snaps the vehicle to the track-owned
 start; spawn transforms are not hard-coded in the vehicle.
+
+## Camera model (Task 10)
+
+`URaceChaseCamera` drives the pawn's spring arm with a relative yaw
+offset (look-ahead into turns) plus speed-sensitive arm length and
+pitch, all smoothed. It reads pawn transform and motion only and never
+writes movement, drivetrain, or race state. Snaps on resets and pawn
+teleports instead of smoothing across discontinuities. Every pawn
+(including AI) carries one; tuning lives in `FRaceCameraConfig` via the
+vehicle config.
 
 ## Test environments
 
