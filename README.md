@@ -9,6 +9,21 @@ Realistic simcade circuit racer for macOS (Apple Silicon), built in Unreal Engin
 The Unreal project and C++ names keep the established `RacingGame` identity
 until a later rename pass; `traction` is the repository and public identity.
 
+## Meaning
+
+**Traction** is the force that moves a vehicle forward. For this project
+the name also describes the engineering idea: movement, contact,
+drivetrain, track, and race state developed as connected parts rather
+than isolated effects.
+
+## Potential
+
+The scope is deliberately small: one car, one track, single-player,
+macOS. The architecture leaves room to grow toward a deeper simcade
+experience (vehicle dynamics, more tracks and vehicles, AI, audio,
+damage, race systems) without promising any of it. The potential is the
+direction the architecture supports, not a feature list.
+
 ## Stack
 
 - Engine: Unreal Engine 5 (C++ + Blueprints)
