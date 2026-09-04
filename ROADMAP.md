@@ -17,9 +17,10 @@ Target: 1080p60 on Apple Silicon. Freeze features at RC.
 
 ## Current
 
-- M4 Racing (next): lap state, checkpoint progression, valid/invalid
-  laps, lap timing, reset/recovery interaction, deterministic race-state
-  E2E. No AI, HUD, multiplayer, or presentation yet.
+- M4 Racing: lap state, checkpoint progression, valid/invalid laps,
+  timing, reset interaction verified (Task 8); one AI rival verified
+  (Task 9). Current: cameras (Task 10). No HUD, multiplayer, or
+  presentation yet.
 
 ## Future
 

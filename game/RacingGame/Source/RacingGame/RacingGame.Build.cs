@@ -23,7 +23,8 @@ public class RacingGame : ModuleRules
 			"RacingGame/Test",
 			"RacingGame/Track",
 			"RacingGame/Race",
-			"RacingGame/AI"
+			"RacingGame/AI",
+			"RacingGame/Camera"
 		});
 	}
 }
