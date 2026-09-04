@@ -53,6 +53,12 @@ public:
 	int32 GetRecoveryCount() const { return RecoveryCount; }
 	bool IsDriving() const { return bDrove; }
 
+	// Re-anchors tracking to the current position after an external
+	// teleport (test staging, reset). Without this, the stall detector
+	// compares fresh positions against pre-teleport progress and fires
+	// falsely for every car at once.
+	void Reanchor();
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
