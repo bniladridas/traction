@@ -5,7 +5,7 @@ Three verification categories, never mixed:
 1. **Functional**: does the behavior happen? Headless standalone runs with
    scripted input through the real gameplay path, transform logs, and
    `results.json` with predefined thresholds. Current suite: 52 flags
-   across nine artifacts (see the frozen layers below).
+   across ten artifacts (see the frozen layers below).
 
 ## Regression layers (frozen, cumulative)
 
@@ -31,6 +31,8 @@ tasks add layers; none edit earlier ones.
   lead, no pops, reset snap, race compatibility on the camera map.
 - Task 11 (`Saved/Task11E2E/`): grid, progress, dominance, overtake,
   reset, finish ordering on the position map.
+- Task 12 (`Saved/Task12E2E/`): field spawn, progress, laps, finish
+  order, no deadlock, reset clearing on the field map.
 
 CI (`test.yml`) validates repository invariants on GitHub-hosted runners:
 verification docs, frozen threshold namespaces, headers, tooling syntax,
@@ -58,11 +60,11 @@ GenerateProjectFiles.sh -project="game/RacingGame/RacingGame.uproject" -game -en
 Build.sh TP_VehicleAdvEditor Mac Development -project="game/RacingGame/RacingGame.uproject"
 ```
 
-Run all six E2E programs (flat map, circuit map, race-state map, AI
-map, camera map, position map),
-then require every flag true across all nine artifacts (30 frozen
+Run all seven E2E programs (flat map, circuit map, race-state map, AI
+map, camera map, position map, field map),
+then require every flag true across all ten artifacts (30 frozen
 regression flags plus 10 Task 8 gates plus 6 Task 9 gates plus 6 Task
-10 gates plus 6 Task 11 gates):
+10 gates plus 6 Task 11 gates plus 6 Task 12 gates):
 
 ```text
 python3 tools/check_regression.py
