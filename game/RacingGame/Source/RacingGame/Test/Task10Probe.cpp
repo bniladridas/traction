@@ -13,6 +13,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#include "UnrealClient.h"
 
 ATask10Probe::ATask10Probe()
 {
@@ -22,6 +23,7 @@ ATask10Probe::ATask10Probe()
 void ATask10Probe::BeginPlay()
 {
 	Super::BeginPlay();
+	bShotsEnabled = FParse::Param(FCommandLine::Get(), TEXT("Task10Shots"));
 	for (TActorIterator<ARaceTrack> It(GetWorld()); It; ++It)
 	{
 		Track = *It;
@@ -121,6 +123,24 @@ void ATask10Probe::DrivePlayer()
 		Player->ApplyThrottle(0.4f);
 		Player->ApplyBrake(0.0f);
 	}
+}
+
+void ATask10Probe::TakeShot(const FString& FileName, const FString& Phase)
+{
+	if (!bShotsEnabled || bFinished || !Player || !PlayerCam)
+	{
+		return;
+	}
+	const FString Dir = FPaths::ProjectSavedDir() + TEXT("Task10E2E/screenshots/");
+	IPlatformFile& PF = FPlatformFileManager::Get().GetPlatformFile();
+	PF.CreateDirectoryTree(*Dir);
+	FScreenshotRequest::RequestScreenshot(Dir + FileName, false, false);
+	ShotEntries.Add(FString::Printf(
+		TEXT("{\"file\":\"%s\",\"phase\":\"%s\",\"t\":%.2f,\"veh_loc\":\"%s\",\"veh_rot\":\"%s\",\"cam_loc\":\"%s\",\"cam_rot\":\"%s\"}"),
+		*FileName, *Phase, Elapsed,
+		*Player->GetActorLocation().ToString(), *Player->GetActorRotation().ToString(),
+		*PlayerCam->GetComponentLocation().ToString(), *PlayerCam->GetComponentRotation().ToString()));
+	UE_LOG(LogTemp, Display, TEXT("RACECAM10E2E: shot requested %s (%s)"), *FileName, *Phase);
 }
 
 void ATask10Probe::Tick(float Delta)
@@ -274,6 +294,26 @@ void ATask10Probe::Tick(float Delta)
 		UE_LOG(LogTemp, Display, TEXT("RACECAM10E2E: reset poserr=%.1f yawerr=%.2f"), ResetPosErr, ResetYawErr);
 	}
 
+	if (!bShotStart && Elapsed >= 2.0)
+	{
+		bShotStart = true;
+		TakeShot(TEXT("track-start.png"), TEXT("start"));
+	}
+	if (!bShotSweeper && Elapsed >= 10.0)
+	{
+		bShotSweeper = true;
+		TakeShot(TEXT("track-sweeper.png"), TEXT("sweeper"));
+	}
+	if (!bShotHairpin && Elapsed >= 15.0)
+	{
+		bShotHairpin = true;
+		TakeShot(TEXT("track-hairpin.png"), TEXT("hairpin"));
+	}
+	if (!bShotRace && Elapsed >= 30.0)
+	{
+		bShotRace = true;
+		TakeShot(TEXT("track-race.png"), TEXT("race"));
+	}
 	if (Elapsed >= Task10Limits::FinishAt)
 	{
 		Finish(true, TEXT("program complete"));
@@ -339,6 +379,14 @@ void ATask10Probe::WriteResults(bool bOk, const FString& Note) const
 	IPlatformFile& PF = FPlatformFileManager::Get().GetPlatformFile();
 	PF.CreateDirectoryTree(*Dir);
 	FFileHelper::SaveStringToFile(Json, *(Dir + TEXT("results.json")));
+	FString Manifest = TEXT("{\"shots_requested\":");
+	Manifest += bShotsEnabled ? TEXT("true") : TEXT("false");
+	Manifest += TEXT(",\"renderer_note\":\"Captures go through the real renderer pipeline; PNG files materialize only in rendered (non-nullrhi) runs.\",\"captures\":[");
+	Manifest += FString::Join(ShotEntries, TEXT(","));
+	Manifest += TEXT("]}");
+	PF.CreateDirectoryTree(*(Dir + TEXT("screenshots/")));
+	FFileHelper::SaveStringToFile(Manifest, *(Dir + TEXT("screenshots/manifest.json")));
+	UE_LOG(LogTemp, Display, TEXT("RACECAM10E2E: manifest written with %d captures"), ShotEntries.Num());
 	UE_LOG(LogTemp, Display, TEXT("RACECAM10E2E: followP=%d followA=%d lead=%d pops=%d reset=%d race=%d all=%d"),
 		bFollowP, bFollowA, bLead, bNoPops, bReset, bRace, bAll);
 }

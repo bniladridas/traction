@@ -24,6 +24,18 @@ experience (vehicle dynamics, more tracks and vehicles, AI, audio,
 damage, race systems) without promising any of it. The potential is the
 direction the architecture supports, not a feature list.
 
+## Current state
+
+Prototype renders from the real Metal renderer (Task 12 state).
+Untextured, no art pass; shown for discussion of actual state, not as
+quality, performance, or gameplay claims.
+
+![Start/finish straight](docs/verification/assets/track-start.png)
+![Fast sweeper](docs/verification/assets/track-sweeper.png)
+
+Full evidence per task lives in `docs/verification/`; the chronological
+record lives in the Scholarship Gist; the site shows the same frames.
+
 ## Stack
 
 - Engine: Unreal Engine 5 (C++ + Blueprints)

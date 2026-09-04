@@ -95,8 +95,21 @@ Exit 0 via `QuitGame`. Log: 0 load errors, 0 ensures, 0 fatals.
 
 ## Rendered verification status
 
-`Rendered verification: Blocked by missing Xcode Metal Toolchain component.`
-No run spent, nothing manufactured.
+`Rendered verification: PASSED (Metal, September 2026).` The toolchain
+block that held at write time is resolved; `-Task10Shots` captures from
+the circuit map went through the real Metal renderer with exit 0.
+
+Track presentation evidence (prototype appearance, not quality claims),
+committed alongside this report:
+
+- Start/finish straight: `assets/track-start.png`
+- Fast sweeper: `assets/track-sweeper.png`
+- Hairpin: `assets/track-hairpin.png`
+- Driving: `assets/track-race.png`
+
+Capture manifest: `assets/task10-manifest.json`. Full run logs remain
+local under `game/RacingGame/Saved/Task10E2E/` (gitignored). The site
+shows the same frames as current prototype renders.
 
 ## Limitations
 
