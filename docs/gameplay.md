@@ -1,9 +1,13 @@
 # Gameplay: Race Loop
 
-State machine: Menu -> Countdown (3-2-1-GO) -> Racing -> Finished -> Results.
+Status: verified through Task 8 (single player) and Task 9 (one AI).
+Future UI wording below is a target, not current functionality.
 
-Laps: Start -> Checkpoint 1..N in order -> Finish. Wrong-way / skip = invalid lap.
-Position = lap + checkpoint index + distance along spline.
-Timing: current lap, best lap, total race time, 3-lap default.
+Verified: Ready -> Countdown (configurable) -> Racing -> Finished,
+with reset-to-Ready. Laps: start line -> checkpoints 0..N in order ->
+finish line; out-of-order crossings are ignored and invalidate the lap;
+a completed invalid sequence does not count. Timing: last and best lap
+per participant. Default LapCount 2 (configuration, not a promise).
 
-HUD: POSITION x/y, LAP x/y, TIME mm:ss.mmm, SPEED km/h. Minimal.
+Not verified: positions, spline-distance ordering, multi-car fields,
+3-lap default, HUD (POSITION/LAP/TIME/SPEED), menus, results screens.

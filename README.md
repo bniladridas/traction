@@ -42,7 +42,7 @@ traction/
 ├── ROADMAP.md
 ├── AGENTS.md
 ├── docs/
-│   ├── architecture.md      # current system map (Task 7 state)
+│   ├── architecture.md      # current system map (Task 10 state)
 │   ├── testing.md           # verification philosophy + regression layers
 │   ├── vehicles.md          # V1 car: custom movement, config, drivetrain
 │   ├── track.md             # V1 circuit: config, collision, checkpoints
@@ -50,13 +50,16 @@ traction/
 │   ├── graphics.md
 │   ├── audio.md
 │   ├── release.md
-│   └── verification/        # per-task E2E evidence (tasks 1-7)
+│   └── verification/        # per-task E2E evidence (tasks 1-10)
 ├── site/                    # static project site (GitHub Pages)
 └── game/                    # UE5 project (RacingGame module + template base)
     └── RacingGame/
         ├── Source/RacingGame/
         │   ├── Vehicle/     # pawn, movement, drivetrain, config
+        │   ├── Camera/      # chase driver + config
         │   ├── Track/       # track actor + config
+        │   ├── Race/        # manager + config
+        │   ├── AI/          # pursuit driver + recovery
         │   └── Test/        # GameModes + E2E probes (verification only)
         └── Content/
             ├── Task2/       # flat prototype map
