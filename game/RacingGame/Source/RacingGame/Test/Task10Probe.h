@@ -54,6 +54,7 @@ private:
 	void WriteResults(bool bOk, const FString& Note) const;
 	int32 NearestIndex(const FVector& Pos) const;
 	void DrivePlayer();
+	void TakeShot(const FString& FileName, const FString& Phase);
 
 	ARaceVehicle* Player = nullptr;
 	ARaceVehicle* AI = nullptr;
@@ -98,4 +99,10 @@ private:
 	float ResetPosErr = -1.0f;
 	float ResetYawErr = -1.0f;
 	bool bResetMeasured = false;
+	bool bShotsEnabled = false;
+	bool bShotStart = false;
+	bool bShotSweeper = false;
+	bool bShotHairpin = false;
+	bool bShotRace = false;
+	TArray<FString> ShotEntries;
 };
