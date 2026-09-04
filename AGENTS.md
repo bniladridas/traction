@@ -11,6 +11,10 @@ Read relevant existing code before editing. Keep changes small and modular.
 7. Prefer UE5 conventions: `ARaceVehicle`, `URaceVehicleMovement`, etc.
 8. macOS/Metal constraints: ARM-native, no DirectX-only plugins, profile draw calls/shadows.
 9. If blocked (missing asset, engine version mismatch), stop and report. Do not invent workarounds silently.
+10. Scholarship Gist edits are append-only file operations: fetch content
+via the API content path, verify with grep before editing, and never
+feed `gh gist view` presentation output back into `gh gist edit` (its
+headers pollute the stored file).
 
 ## Task prompt template
 
