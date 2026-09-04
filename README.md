@@ -13,8 +13,8 @@ until a later rename pass; `traction` is the repository and public identity.
 
 **Traction** is the force that moves a vehicle forward. For this project
 the name also describes the engineering idea: movement, contact,
-drivetrain, track, and race state developed as connected parts rather
-than isolated effects.
+drivetrain, track, race state, AI, cameras, and positions developed as
+connected parts rather than isolated effects.
 
 ## Potential
 
@@ -42,7 +42,7 @@ traction/
 ├── ROADMAP.md
 ├── AGENTS.md
 ├── docs/
-│   ├── architecture.md      # current system map (Task 10 state)
+│   ├── architecture.md      # current system map (Task 12 state)
 │   ├── testing.md           # verification philosophy + regression layers
 │   ├── vehicles.md          # V1 car: custom movement, config, drivetrain
 │   ├── track.md             # V1 circuit: config, collision, checkpoints
@@ -50,7 +50,7 @@ traction/
 │   ├── graphics.md
 │   ├── audio.md
 │   ├── release.md
-│   └── verification/        # per-task E2E evidence (tasks 1-10)
+│   └── verification/        # per-task E2E evidence (tasks 1-12)
 ├── site/                    # static project site (GitHub Pages)
 └── game/                    # UE5 project (RacingGame module + template base)
     └── RacingGame/
