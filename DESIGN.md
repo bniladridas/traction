@@ -13,44 +13,53 @@ Single-player only for V1. Tone: clean, believable, motorsport, no arcade gimmic
 
 ```text
 Input (throttle/brake/steer)
-  -> VehiclePhysics (engine, trans, aero, suspension)
-  -> Wheel forces (grip/slip/brake)
-  -> Chassis movement
-  -> Wheel visuals + audio + camera
+  -> FRaceDriveCommand (normalized struct, the only input path)
+  -> URaceVehicleMovement (drivetrain request, brake, tires, sweep)
+  -> transform, speeds, wheel state, camera follow
 ```
 
-## 3. V1 Pillars
+Implemented: mass, gears, suspension, tire forces, no aero (deferred).
+60Hz physics tick is a target; current integration is frame-delta.## 3. V1 Pillars
 
 1. Driving feel first (prototype is ugly on purpose).
 2. One track done well (graybox → collision → art).
-3. Complete race loop (countdown → laps → positions → finish → results).
+3. Complete race loop (Ready → Countdown → Racing → Finished, laps,
+   positions verified; results screens future).
 4. macOS performance is a feature (1080p60 target, quality presets).
 
 ## 4. Module architecture (UE5)
 
+As built (Task 12 state). Future dirs are targets, not existing code.
+
 ```text
-game/Source/RacingGame/
-├── Vehicle/   # controller, physics, engine, transmission, aero
-├── Wheels/    # suspension, tire grip/slip, brakes, steering
-├── Track/     # spline, checkpoints, start/finish, racing line
+game/RacingGame/Source/RacingGame/
+├── Vehicle/   # pawn, movement, drivetrain, config
+├── Camera/    # chase driver + config
+├── Track/     # centerline, checkpoints, start/finish, grid
 ├── Race/      # manager, laps, positions, timing
-├── AI/        # spline follow, speed/brake control, overtake
-├── Camera/    # chase, cockpit
-├── UI/        # menu, HUD, pause, settings
-├── Audio/     # engine (RPM/load), tires, impacts, ambient
-└── Save/      # settings, best laps, results (versioned)
+├── AI/        # pursuit driver + recovery (no overtake yet)
+├── Test/      # GameModes + E2E probes (verification only)
+└── TP_VehicleAdv/ (template base, retained for project defaults)
 ```
+
+Future: cockpit cameras, racing line, UI (menu, HUD, pause, settings),
+Audio (engine RPM/load, tires, impacts, ambient), Save (settings, best
+laps, results, versioned). Per the rules below, those dirs are created
+only when their systems land.
 
 Rules:
 - No cross-module includes except via public interfaces.
 - No placeholder systems. Create dirs/interfaces only when needed.
-- Every vehicle param data-driven (DataAsset / Curve), never hardcoded magic.
+- Every vehicle param data-driven (`FRaceVehicleConfig` struct today; a
+  DataAsset storing the same struct remains a possible later step),
+  never hardcoded magic.
 
 ## 5. Key tuning parameters (expose incrementally)
 
-mass, CoG height, torque/HP curve, gear ratios + final drive,
-drag, downforce, tire grip front/rear, brake force bias,
-suspension stiffness/damping, steering ratio/speed sensitivity.
+Implemented: mass, torque curve, gear ratios + final drive, drag,
+brake force, suspension stiffness/damping, steering speed sensitivity.
+Future: CoG height, downforce/aero, per-axle grip split, brake force
+bias.
 
 ## 6. Visual direction
 
