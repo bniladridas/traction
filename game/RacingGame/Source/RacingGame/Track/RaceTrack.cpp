@@ -167,6 +167,22 @@ void ARaceTrack::BuildTrack()
 	StartYawDeg = FMath::RadiansToDegrees(FMath::Atan2(Line.Forward.Y, Line.Forward.X));
 }
 
+void ARaceTrack::GetGridPose(int32 Slot, FVector& Loc, float& YawDeg) const
+{
+	if (Slot <= 0)
+	{
+		Loc = StartPosition;
+		YawDeg = StartYawDeg;
+		return;
+	}
+	const float S = TrackConfig.StartLineDistance - TrackConfig.SpawnBackoff - static_cast<float>(Slot) * 100.0f;
+	const FRaceTrackCenterPoint P = SampleAtDistance(S);
+	const float Lat = (Slot % 2 == 1) ? -200.0f : 200.0f;
+	const FVector Right(-P.Forward.Y, P.Forward.X, 0.0f);
+	Loc = P.Position + Right * Lat + FVector(0.0f, 0.0f, 60.0f);
+	YawDeg = FMath::RadiansToDegrees(FMath::Atan2(P.Forward.Y, P.Forward.X));
+}
+
 FRaceTrackCenterPoint ARaceTrack::SampleAtDistance(float S) const
 {
 	FRaceTrackCenterPoint Out;

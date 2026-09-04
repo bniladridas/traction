@@ -43,15 +43,35 @@ int32 URaceAIDriver::NearestIndex(const FVector& Pos) const
 	return Best;
 }
 
+void URaceAIDriver::Reanchor()
+{
+	bAnchored = false;
+	OfftrackTime = 0.0f;
+	CheckTime = -100.0f;
+}
+
 void URaceAIDriver::Respawn(int32 Idx)
 {
+	static double LastRespawnClock = -100.0;
+	// Stagger coincident respawns across the field: two cars respawning
+	// to the same dense point on the same tick would stack. The waiter
+	// retries on later ticks once the first car has driven clear.
+	if (Clock - LastRespawnClock < 2.0)
+	{
+		return;
+	}
+	LastRespawnClock = Clock;
 	const TArray<FRaceTrackCenterPoint>& Pts = Track->GetCenterPoints();
 	const FRaceTrackCenterPoint& P = Pts[Idx];
 	const float Yaw = FMath::RadiansToDegrees(FMath::Atan2(P.Forward.Y, P.Forward.X));
-	// Rest height exactly (box half-height over the road top): the model
-	// settles via free-fall plus box block at spawn, but mid-run traces
-	// touch immediately and the grounded rule would freeze a drop.
-	Vehicle->SetActorLocationAndRotation(FVector(P.Position.X, P.Position.Y, 40.0f),
+	UE_LOG(LogTemp, Display, TEXT("RACEAI: respawn %s from %s to s=%.0f"),
+		*GetOwner()->GetName(), *Vehicle->GetActorLocation().ToString(), P.Distance);
+	// Rest height exactly (see above), plus an alternating lateral offset:
+	// coincident respawns of stacked cars must not land on the same spot.
+	const float Side = (RecoveryCount % 2 == 0) ? 100.0f : -100.0f;
+	const FVector Right(-P.Forward.Y, P.Forward.X, 0.0f);
+	const FVector Target = FVector(P.Position.X, P.Position.Y, 40.0f) + Right * Side;
+	Vehicle->SetActorLocationAndRotation(Target,
 		FRotator(0.0f, Yaw, 0.0f), false, nullptr, ETeleportType::TeleportPhysics);
 	Vehicle->ResetMotion();
 	if (Manager)
@@ -94,8 +114,8 @@ void URaceAIDriver::TickComponent(float DeltaTime, enum ELevelTick TickType, FAc
 		{
 			ContactCount += Vehicle->GetWheelContact(w) ? 1 : 0;
 		}
-		UE_LOG(LogTemp, Display, TEXT("RACEAI: t=%.1f s=%.0f v=%.0f gear=%d thr=%.1f contact=%d off=%.2f rec=%d pos=%s"),
-			Clock, UnwrappedS, Vehicle->GetForwardSpeed(), Vehicle->GetGearIndex(),
+			UE_LOG(LogTemp, Display, TEXT("RACEAI: t=%.1f %s s=%.0f v=%.0f gear=%d thr=%.1f contact=%d off=%.2f rec=%d pos=%s"),
+				Clock, *GetOwner()->GetName(), UnwrappedS, Vehicle->GetForwardSpeed(), Vehicle->GetGearIndex(),
 			Vehicle->GetThrottleInput(), ContactCount, OfftrackTime, RecoveryCount,
 			*Vehicle->GetActorLocation().ToString());
 	}

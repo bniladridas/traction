@@ -33,6 +33,11 @@ public:
 	// Centerline sample at wrapped distance S. Public for test drivers.
 	FRaceTrackCenterPoint SampleAtDistance(float S) const;
 
+	// Grid slot pose for multiplayer fields. Slot 0 is the start pose;
+	// later slots stagger behind with alternating lateral offset, all
+	// derived from the centerline. No stored grid data.
+	void GetGridPose(int32 Slot, FVector& Loc, float& YawDeg) const;
+
 protected:
 	virtual void BeginPlay() override;
 
