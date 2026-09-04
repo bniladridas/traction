@@ -24,8 +24,39 @@ tasks add layers; none edit earlier ones.
   alignment, centerline validity, checkpoint order, lap traversal on
   the circuit map.
 
-CI (`test.yml`) runs both E2E programs on the self-hosted runner and
-fails unless every flag in all five artifacts is true.
+CI (`test.yml`) validates repository invariants on GitHub-hosted runners:
+verification docs, frozen threshold namespaces, headers, tooling syntax,
+and no pending-runner references. It never builds or runs the game.
+
+## Verification policy
+
+No self-hosted runner. GitHub-hosted CI checks repository correctness;
+the local Apple Silicon Mac verifies the Unreal application:
+
+```text
+GitHub PR -> GitHub-hosted CI (lint, docs, contract checks)
+Local M1 Mac -> UE build, headless E2E, logs, rendered checks
+```
+
+Unreal runtime verification is performed locally on the development Mac.
+Task reports record this explicitly rather than implying CI ran the game.
+
+## Local verification procedure (M1 Mac)
+
+Build once:
+
+```text
+GenerateProjectFiles.sh -project="game/RacingGame/RacingGame.uproject" -game -engine
+Build.sh TP_VehicleAdvEditor Mac Development -project="game/RacingGame/RacingGame.uproject"
+```
+
+Run all three E2E programs (flat map, circuit map, race-state map),
+then require every flag true across all six artifacts (30 frozen
+regression flags plus 10 Task 8 gates):
+
+```text
+python3 tools/check_regression.py
+```
 2. **Rendered**: was a real frame produced? Only from the Unreal renderer
    (Metal), never synthetic images. Screenshots prove frames were produced,
    not that the game looks good.
