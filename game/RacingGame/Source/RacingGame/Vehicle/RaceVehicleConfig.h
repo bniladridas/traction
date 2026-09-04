@@ -8,6 +8,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "RaceCameraConfig.h"
 #include "RaceVehicleConfig.generated.h"
 
 // Normalized driving commands. The movement system receives only this;
@@ -234,4 +235,8 @@ struct FRaceVehicleConfig
 	// the yaw rule, not in this geometric angle.
 	UPROPERTY(EditAnywhere, Category = "Race|Steering")
 	float MaxSteerAngleDeg = 30.0f;
+
+	// Chase camera tuning, consumed by the camera driver component.
+	UPROPERTY(EditAnywhere, Category = "Race|Camera")
+	FRaceCameraConfig Camera;
 };

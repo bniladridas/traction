@@ -18,6 +18,7 @@ class USpringArmComponent;
 class UCameraComponent;
 class URaceVehicleMovement;
 class URaceDrivetrain;
+class URaceChaseCamera;
 
 UCLASS()
 class RACINGGAME_API ARaceVehicle : public APawn
@@ -71,6 +72,7 @@ public:
 	float GetLastShaftTorque() const;
 
 	UCameraComponent* GetChaseCamera() const { return ChaseCamera; }
+	URaceChaseCamera* GetChaseCameraDriver() const { return ChaseCamDriver; }
 
 protected:
 	// Single authoritative tunable set, edited per instance or subclass.
@@ -108,6 +110,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Race")
 	URaceDrivetrain* Drivetrain;
+
+	UPROPERTY(VisibleAnywhere, Category = "Race")
+	URaceChaseCamera* ChaseCamDriver;
 
 	// Assembled normalized command. Keyboard callbacks and the harness
 	// both write here; the movement consumes the whole struct.

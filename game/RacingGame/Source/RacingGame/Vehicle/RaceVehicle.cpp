@@ -3,6 +3,7 @@
 #include "RaceVehicle.h"
 #include "RaceVehicleMovement.h"
 #include "RaceDrivetrain.h"
+#include "RaceChaseCamera.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -41,6 +42,8 @@ ARaceVehicle::ARaceVehicle()
 	VehicleMovement = CreateDefaultSubobject<URaceVehicleMovement>(TEXT("VehicleMovement"));
 
 	Drivetrain = CreateDefaultSubobject<URaceDrivetrain>(TEXT("Drivetrain"));
+
+	ChaseCamDriver = CreateDefaultSubobject<URaceChaseCamera>(TEXT("ChaseCamDriver"));
 }
 
 void ARaceVehicle::BeginPlay()
@@ -50,6 +53,11 @@ void ARaceVehicle::BeginPlay()
 	VehicleMovement->ApplyConfig(VehicleConfig);
 	VehicleMovement->SetDrivetrain(Drivetrain);
 	Drivetrain->ApplyConfig(VehicleConfig);
+	if (ChaseCamDriver)
+	{
+		ChaseCamDriver->CameraConfig = VehicleConfig.Camera;
+		ChaseCamDriver->Init(CameraArm, ChaseCamera);
+	}
 	SettleToGround();
 	InitialTransform = GetActorTransform();
 }
@@ -128,6 +136,10 @@ void ARaceVehicle::ResetVehicle()
 	ApplySteering(0.0f);
 	VehicleMovement->ResetSpeed();
 	SetActorTransform(InitialTransform, false, nullptr, ETeleportType::TeleportPhysics);
+	if (ChaseCamDriver)
+	{
+		ChaseCamDriver->SnapToTarget();
+	}
 }
 
 void ARaceVehicle::ResetMotion()
