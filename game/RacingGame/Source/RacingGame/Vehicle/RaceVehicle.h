@@ -35,6 +35,10 @@ public:
 	// Restores the BeginPlay transform with zero velocity. Bound to R.
 	void ResetVehicle();
 
+	// Zeroes speeds without moving the actor. Used by AI recovery
+	// respawns; not a physics change.
+	void ResetMotion();
+
 	float GetForwardSpeed() const;
 	float GetLateralSpeed() const;
 	float GetYawRate() const;

@@ -130,6 +130,17 @@ void ARaceVehicle::ResetVehicle()
 	SetActorTransform(InitialTransform, false, nullptr, ETeleportType::TeleportPhysics);
 }
 
+void ARaceVehicle::ResetMotion()
+{
+	ApplyThrottle(0.0f);
+	ApplyBrake(0.0f);
+	ApplySteering(0.0f);
+	if (VehicleMovement)
+	{
+		VehicleMovement->ResetSpeed();
+	}
+}
+
 float ARaceVehicle::GetForwardSpeed() const
 {
 	return VehicleMovement ? VehicleMovement->GetForwardSpeed() : 0.0f;
