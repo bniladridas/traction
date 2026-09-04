@@ -1,10 +1,11 @@
-// Race progression (Tasks 8-9).
+// Race progression (Tasks 8-11).
 // Observes registered participant vehicles against the track's
 // checkpoint planes and owns phase, ordered progression, lap counting,
-// validity, and timing. Participant 0 is the player pawn; AI racers
-// register additionally. Legacy single-participant getters delegate to
-// participant 0, preserving the Task 8 contract exactly. The vehicles
-// know nothing of lap rules; future UI reads the getters here.
+// validity, timing, and positions. Participant 0 is the player pawn; AI
+// racers register additionally. Legacy single-participant getters
+// delegate to participant 0, preserving the Task 8 contract exactly.
+// The vehicles know nothing of lap rules; future UI reads the getters
+// here.
 
 #pragma once
 
@@ -38,6 +39,7 @@ struct FRaceParticipant
 	bool bLapValid = true;
 	bool bLastSequenceValid = true;
 	bool bFinished = false;
+	int32 FinishSeq = -1;
 	int32 CompletedLaps = 0;
 	float LapStartTime = 0.0f;
 	float LastLapTime = 0.0f;
@@ -98,6 +100,11 @@ public:
 	bool IsParticipantFinished(int32 Index) const;
 	float GetParticipantLastLap(int32 Index) const;
 
+	// Live position, 1-based, deterministic. Finished participants sort
+	// by finish sequence; the rest by laps, then along-track distance,
+	// then participant index. Returns -1 for unknown racers.
+	int32 GetPosition(const ARaceVehicle* Participant) const;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
@@ -111,6 +118,7 @@ private:
 	ERacePhase Phase = ERacePhase::Ready;
 	float PhaseTime = 0.0f;
 	float RaceClock = 0.0f;
+	int32 FinishCounter = 0;
 	TArray<FRaceParticipant> Participants;
 
 	ARaceTrack* Track = nullptr;

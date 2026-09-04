@@ -169,12 +169,14 @@ void ARaceManager::OnVehicleReset()
 {
 	Phase = ERacePhase::Ready;
 	PhaseTime = 0.0f;
+	FinishCounter = 0;
 	for (FRaceParticipant& P : Participants)
 	{
 		P.ExpectIdx = 0;
 		P.bLapValid = true;
 		P.bLastSequenceValid = true;
 		P.bFinished = false;
+		P.FinishSeq = -1;
 		P.CompletedLaps = 0;
 		P.LapStartTime = 0.0f;
 		P.LastLapTime = 0.0f;
@@ -299,7 +301,8 @@ void ARaceManager::AdvanceParticipant(FRaceParticipant& P, float DeltaTime)
 					if (P.CompletedLaps >= RaceConfig.LapCount)
 					{
 						P.bFinished = true;
-						UE_LOG(LogTemp, Display, TEXT("RACE8: participant finished (%d laps)"), P.CompletedLaps);
+						P.FinishSeq = FinishCounter++;
+						UE_LOG(LogTemp, Display, TEXT("RACE8: participant finished (%d laps, seq %d)"), P.CompletedLaps, P.FinishSeq);
 						bool bAllDone = true;
 						for (const FRaceParticipant& Q : Participants)
 						{
@@ -328,4 +331,71 @@ void ARaceManager::AdvanceParticipant(FRaceParticipant& P, float DeltaTime)
 			UE_LOG(LogTemp, Display, TEXT("RACE8: checkpoint %d ignored (expect %d), lap invalid"), i, P.ExpectIdx);
 		}
 	}
+}
+
+int32 ARaceManager::GetPosition(const ARaceVehicle* Participant) const
+{
+	const int32 Self = FindParticipant(Participant);
+	if (Self < 0 || !Track)
+	{
+		return -1;
+	}
+	const float L = Track->GetTrackLength();
+	const TArray<FRaceTrackCenterPoint>& Pts = Track->GetCenterPoints();
+	// Along-track distance per participant: nearest centerline point by
+	// 2D distance (full deterministic scan, same method as the test
+	// drivers; documented in task-11-e2e.md). No new track data.
+	TArray<float> Prog;
+	Prog.SetNum(Participants.Num());
+	for (int32 i = 0; i < Participants.Num(); ++i)
+	{
+		float Best = FLT_MAX;
+		float BestS = 0.0f;
+		if (Participants[i].Vehicle.IsValid() && Pts.Num() > 0)
+		{
+			const FVector Pos = Participants[i].Vehicle->GetActorLocation();
+			for (int32 k = 0; k < Pts.Num(); ++k)
+			{
+				const float D = FVector::DistSquared2D(Pos, Pts[k].Position);
+				if (D < Best)
+				{
+					Best = D;
+					BestS = Pts[k].Distance;
+				}
+			}
+		}
+		Prog[i] = Participants[i].CompletedLaps * L + BestS;
+	}
+	// Total order: finished by finish sequence, then score, then index.
+	TArray<int32> Order;
+	for (int32 i = 0; i < Participants.Num(); ++i)
+	{
+		Order.Add(i);
+	}
+	Order.Sort([this, &Prog](int32 A, int32 B)
+	{
+		const FRaceParticipant& PA = Participants[A];
+		const FRaceParticipant& PB = Participants[B];
+		if (PA.bFinished != PB.bFinished)
+		{
+			return PA.bFinished > PB.bFinished;
+		}
+		if (PA.bFinished && PB.bFinished)
+		{
+			return PA.FinishSeq < PB.FinishSeq;
+		}
+		if (Prog[A] != Prog[B])
+		{
+			return Prog[A] > Prog[B];
+		}
+		return A < B;
+	});
+	for (int32 Rank = 0; Rank < Order.Num(); ++Rank)
+	{
+		if (Order[Rank] == Self)
+		{
+			return Rank + 1;
+		}
+	}
+	return -1;
 }
