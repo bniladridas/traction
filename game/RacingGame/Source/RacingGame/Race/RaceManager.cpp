@@ -29,15 +29,130 @@ void ARaceManager::BeginPlay()
 	}
 	if (APawn* Pawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0))
 	{
-		Vehicle = Cast<ARaceVehicle>(Pawn);
+		if (ARaceVehicle* RV = Cast<ARaceVehicle>(Pawn))
+		{
+			RegisterParticipant(RV);
+		}
 	}
+	UE_LOG(LogTemp, Display, TEXT("RACE8: manager ready cps=%d laps=%d countdown=%.1f racers=%d"),
+		Track ? Track->GetCheckpoints().Num() : -1,
+		RaceConfig.LapCount, RaceConfig.CountdownDuration, Participants.Num());
+}
+
+int32 ARaceManager::FindParticipant(const ARaceVehicle* Participant) const
+{
+	for (int32 i = 0; i < Participants.Num(); ++i)
+	{
+		if (Participants[i].Vehicle.Get() == Participant)
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
+int32 ARaceManager::RegisterParticipant(ARaceVehicle* Participant)
+{
+	if (!Participant)
+	{
+		return -1;
+	}
+	const int32 Existing = FindParticipant(Participant);
+	if (Existing >= 0)
+	{
+		return Existing;
+	}
+	FRaceParticipant P;
+	P.Vehicle = Participant;
 	if (Track)
 	{
-		PlaneArmed.Init(1, Track->GetCheckpoints().Num());
+		P.PlaneArmed.Init(1, Track->GetCheckpoints().Num());
 	}
-	UE_LOG(LogTemp, Display, TEXT("RACE8: manager ready cps=%d laps=%d countdown=%.1f"),
-		Track ? Track->GetCheckpoints().Num() : -1,
-		RaceConfig.LapCount, RaceConfig.CountdownDuration);
+	Participants.Add(P);
+	UE_LOG(LogTemp, Display, TEXT("RACE8: registered participant %d"), Participants.Num() - 1);
+	return Participants.Num() - 1;
+}
+
+void ARaceManager::ReanchorParticipant(ARaceVehicle* Participant)
+{
+	const int32 Index = FindParticipant(Participant);
+	if (Index < 0 || !Track)
+	{
+		return;
+	}
+	FRaceParticipant& P = Participants[Index];
+	P.PlaneArmed.Init(1, Track->GetCheckpoints().Num());
+	P.bPrevInit = false;
+}
+
+int32 ARaceManager::GetCompletedLaps() const
+{
+	return Participants.IsValidIndex(0) ? Participants[0].CompletedLaps : 0;
+}
+
+int32 ARaceManager::GetNextCheckpoint() const
+{
+	return Participants.IsValidIndex(0) ? Participants[0].ExpectIdx : 0;
+}
+
+bool ARaceManager::IsCurrentLapValid() const
+{
+	return Participants.IsValidIndex(0) ? Participants[0].bLapValid : true;
+}
+
+bool ARaceManager::WasLastSequenceValid() const
+{
+	return Participants.IsValidIndex(0) ? Participants[0].bLastSequenceValid : true;
+}
+
+float ARaceManager::GetLastLapTime() const
+{
+	return Participants.IsValidIndex(0) ? Participants[0].LastLapTime : 0.0f;
+}
+
+float ARaceManager::GetBestLapTime() const
+{
+	return Participants.IsValidIndex(0) ? Participants[0].BestLapTime : 0.0f;
+}
+
+int32 ARaceManager::GetCrossingCount() const
+{
+	return Participants.IsValidIndex(0) ? Participants[0].CrossingLog.Num() : 0;
+}
+
+int32 ARaceManager::GetIgnoredCount() const
+{
+	return Participants.IsValidIndex(0) ? Participants[0].IgnoredLog.Num() : 0;
+}
+
+ARaceVehicle* ARaceManager::GetParticipantVehicle(int32 Index) const
+{
+	return Participants.IsValidIndex(Index) ? Participants[Index].Vehicle.Get() : nullptr;
+}
+
+int32 ARaceManager::GetParticipantLaps(int32 Index) const
+{
+	return Participants.IsValidIndex(Index) ? Participants[Index].CompletedLaps : 0;
+}
+
+bool ARaceManager::IsParticipantLapValid(int32 Index) const
+{
+	return Participants.IsValidIndex(Index) ? Participants[Index].bLapValid : true;
+}
+
+bool ARaceManager::WasParticipantLastValid(int32 Index) const
+{
+	return Participants.IsValidIndex(Index) ? Participants[Index].bLastSequenceValid : true;
+}
+
+bool ARaceManager::IsParticipantFinished(int32 Index) const
+{
+	return Participants.IsValidIndex(Index) ? Participants[Index].bFinished : false;
+}
+
+float ARaceManager::GetParticipantLastLap(int32 Index) const
+{
+	return Participants.IsValidIndex(Index) ? Participants[Index].LastLapTime : 0.0f;
 }
 
 void ARaceManager::StartRace()
@@ -54,23 +169,28 @@ void ARaceManager::OnVehicleReset()
 {
 	Phase = ERacePhase::Ready;
 	PhaseTime = 0.0f;
-	CompletedLaps = 0;
-	ExpectIdx = 0;
-	bLapValid = true;
-	bLastSequenceValid = true;
-	LastLapTime = 0.0f;
-	BestLapTime = 0.0f;
-	CrossingLog.Reset();
-	IgnoredLog.Reset();
-	bPrevInit = false;
-	if (Track)
+	for (FRaceParticipant& P : Participants)
 	{
-		PlaneArmed.Init(1, Track->GetCheckpoints().Num());
-		if (Vehicle)
+		P.ExpectIdx = 0;
+		P.bLapValid = true;
+		P.bLastSequenceValid = true;
+		P.bFinished = false;
+		P.CompletedLaps = 0;
+		P.LapStartTime = 0.0f;
+		P.LastLapTime = 0.0f;
+		P.BestLapTime = 0.0f;
+		P.bPrevInit = false;
+		P.CrossingLog.Reset();
+		P.IgnoredLog.Reset();
+		if (Track)
 		{
-			Vehicle->SetActorLocationAndRotation(Track->GetStartPosition(),
-				FRotator(0.0f, Track->GetStartYawDeg(), 0.0f), false, nullptr, ETeleportType::TeleportPhysics);
+			P.PlaneArmed.Init(1, Track->GetCheckpoints().Num());
 		}
+	}
+	if (Track && Participants.IsValidIndex(0) && Participants[0].Vehicle.IsValid())
+	{
+		Participants[0].Vehicle->SetActorLocationAndRotation(Track->GetStartPosition(),
+			FRotator(0.0f, Track->GetStartYawDeg(), 0.0f), false, nullptr, ETeleportType::TeleportPhysics);
 	}
 	UE_LOG(LogTemp, Display, TEXT("RACE8: reset to ready at track start"));
 }
@@ -78,7 +198,7 @@ void ARaceManager::OnVehicleReset()
 void ARaceManager::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (!Track || !Vehicle)
+	if (!Track)
 	{
 		return;
 	}
@@ -89,13 +209,22 @@ void ARaceManager::Tick(float DeltaTime)
 		if (PhaseTime >= RaceConfig.CountdownDuration)
 		{
 			Phase = ERacePhase::Racing;
-			LapStartTime = RaceClock;
+			for (FRaceParticipant& P : Participants)
+			{
+				P.LapStartTime = RaceClock;
+			}
 			UE_LOG(LogTemp, Display, TEXT("RACE8: racing"));
 		}
 	}
 	else if (Phase == ERacePhase::Racing)
 	{
-		AdvanceRacing(DeltaTime);
+		for (FRaceParticipant& P : Participants)
+		{
+			if (P.Vehicle.IsValid() && !P.bFinished)
+			{
+				AdvanceParticipant(P, DeltaTime);
+			}
+		}
 	}
 }
 
@@ -108,23 +237,27 @@ void ARaceManager::PlaneMetrics(int32 CpIndex, const FVector& Pos, float& D, flo
 	Lat = FMath::Abs(FVector::DotProduct(Rel, FVector(-CP.Forward.Y, CP.Forward.X, 0.0f)));
 }
 
-void ARaceManager::AdvanceRacing(float DeltaTime)
+void ARaceManager::AdvanceParticipant(FRaceParticipant& P, float DeltaTime)
 {
 	(void)DeltaTime;
 	const TArray<FRaceTrackCheckpoint>& CPs = Track->GetCheckpoints();
-	const FVector Pos = Vehicle->GetActorLocation();
-	// Previous-tick distances per plane; init on first racing tick.
-	if (!bPrevInit || PrevPlaneD.Num() != CPs.Num())
+	const FVector Pos = P.Vehicle->GetActorLocation();
+	if (P.PlaneArmed.Num() != CPs.Num())
 	{
-		PrevPlaneD.Init(0.0f, CPs.Num());
+		P.PlaneArmed.Init(1, CPs.Num());
+	}
+	// Previous-tick distances per plane; init on first racing tick.
+	if (!P.bPrevInit || P.PrevPlaneD.Num() != CPs.Num())
+	{
+		P.PrevPlaneD.Init(0.0f, CPs.Num());
 		for (int32 i = 0; i < CPs.Num(); ++i)
 		{
 			float D = 0.0f;
 			float Lat = 0.0f;
 			PlaneMetrics(i, Pos, D, Lat);
-			PrevPlaneD[i] = D;
+			P.PrevPlaneD[i] = D;
 		}
-		bPrevInit = true;
+		P.bPrevInit = true;
 		return;
 	}
 	for (int32 i = 0; i < CPs.Num(); ++i)
@@ -135,54 +268,64 @@ void ARaceManager::AdvanceRacing(float DeltaTime)
 		const float Bound = CPs[i].Width * 0.5f + LatMargin;
 		if (D < -RearmBackoff)
 		{
-			PlaneArmed[i] = 1;
+			P.PlaneArmed[i] = 1;
 		}
-		const bool bCross = (PrevPlaneD[i] < 0.0f && D >= 0.0f && Lat < Bound && PlaneArmed[i] != 0);
-		PrevPlaneD[i] = D;
+		const bool bCross = (P.PrevPlaneD[i] < 0.0f && D >= 0.0f && Lat < Bound && P.PlaneArmed[i] != 0);
+		P.PrevPlaneD[i] = D;
 		if (!bCross)
 		{
 			continue;
 		}
-		PlaneArmed[i] = 0;
-		if (i == ExpectIdx)
+		P.PlaneArmed[i] = 0;
+		if (i == P.ExpectIdx)
 		{
-			CrossingLog.Add(i);
-			UE_LOG(LogTemp, Display, TEXT("RACE8: checkpoint %d ok (expect %d)"), i, ExpectIdx);
-			ExpectIdx++;
-			if (ExpectIdx >= CPs.Num())
+			P.CrossingLog.Add(i);
+			UE_LOG(LogTemp, Display, TEXT("RACE8: checkpoint %d ok (expect %d)"), i, P.ExpectIdx);
+			P.ExpectIdx++;
+			if (P.ExpectIdx >= CPs.Num())
 			{
 				// Sequence complete.
-				bLastSequenceValid = bLapValid;
-				if (bLapValid)
+				P.bLastSequenceValid = P.bLapValid;
+				if (P.bLapValid)
 				{
-					CompletedLaps++;
-					LastLapTime = RaceClock - LapStartTime;
-					if (BestLapTime <= 0.0f || LastLapTime < BestLapTime)
+					P.CompletedLaps++;
+					P.LastLapTime = RaceClock - P.LapStartTime;
+					if (P.BestLapTime <= 0.0f || P.LastLapTime < P.BestLapTime)
 					{
-						BestLapTime = LastLapTime;
+						P.BestLapTime = P.LastLapTime;
 					}
 					UE_LOG(LogTemp, Display, TEXT("RACE8: lap %d valid t=%.2f best=%.2f"),
-						CompletedLaps, LastLapTime, BestLapTime);
-					if (CompletedLaps >= RaceConfig.LapCount)
+						P.CompletedLaps, P.LastLapTime, P.BestLapTime);
+					if (P.CompletedLaps >= RaceConfig.LapCount)
 					{
-						Phase = ERacePhase::Finished;
-						UE_LOG(LogTemp, Display, TEXT("RACE8: finished"));
+						P.bFinished = true;
+						UE_LOG(LogTemp, Display, TEXT("RACE8: participant finished (%d laps)"), P.CompletedLaps);
+						bool bAllDone = true;
+						for (const FRaceParticipant& Q : Participants)
+						{
+							bAllDone = bAllDone && Q.bFinished;
+						}
+						if (bAllDone)
+						{
+							Phase = ERacePhase::Finished;
+							UE_LOG(LogTemp, Display, TEXT("RACE8: finished"));
+						}
 					}
 				}
 				else
 				{
 					UE_LOG(LogTemp, Display, TEXT("RACE8: sequence done, lap invalid, not counted"));
 				}
-				ExpectIdx = 0;
-				bLapValid = true;
-				LapStartTime = RaceClock;
+				P.ExpectIdx = 0;
+				P.bLapValid = true;
+				P.LapStartTime = RaceClock;
 			}
 		}
 		else
 		{
-			IgnoredLog.Add(i);
-			bLapValid = false;
-			UE_LOG(LogTemp, Display, TEXT("RACE8: checkpoint %d ignored (expect %d), lap invalid"), i, ExpectIdx);
+			P.IgnoredLog.Add(i);
+			P.bLapValid = false;
+			UE_LOG(LogTemp, Display, TEXT("RACE8: checkpoint %d ignored (expect %d), lap invalid"), i, P.ExpectIdx);
 		}
 	}
 }

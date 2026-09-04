@@ -1,7 +1,10 @@
-// Race progression (Task 8).
-// Observes the vehicle against the track's checkpoint planes and owns
-// phase, ordered progression, lap counting, validity, and timing. The
-// vehicle knows nothing of lap rules; future UI reads the getters here.
+// Race progression (Tasks 8-9).
+// Observes registered participant vehicles against the track's
+// checkpoint planes and owns phase, ordered progression, lap counting,
+// validity, and timing. Participant 0 is the player pawn; AI racers
+// register additionally. Legacy single-participant getters delegate to
+// participant 0, preserving the Task 8 contract exactly. The vehicles
+// know nothing of lap rules; future UI reads the getters here.
 
 #pragma once
 
@@ -22,6 +25,30 @@ enum class ERacePhase : uint8
 class ARaceTrack;
 class ARaceVehicle;
 
+// Per-racer progression state. Phases and the clock stay global.
+USTRUCT(BlueprintType)
+struct FRaceParticipant
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	TWeakObjectPtr<ARaceVehicle> Vehicle;
+
+	int32 ExpectIdx = 0;
+	bool bLapValid = true;
+	bool bLastSequenceValid = true;
+	bool bFinished = false;
+	int32 CompletedLaps = 0;
+	float LapStartTime = 0.0f;
+	float LastLapTime = 0.0f;
+	float BestLapTime = 0.0f;
+	TArray<int32> PlaneArmed;
+	TArray<float> PrevPlaneD;
+	bool bPrevInit = false;
+	TArray<int32> CrossingLog;
+	TArray<int32> IgnoredLog;
+};
+
 UCLASS()
 class RACINGGAME_API ARaceManager : public AActor
 {
@@ -36,47 +63,55 @@ public:
 	// Starts the countdown from Ready. Ignored otherwise.
 	void StartRace();
 
-	// Reset contract: clears progress to Ready and returns the vehicle to
-	// the track-owned start. The game layer calls this together with the
-	// vehicle's own reset; the vehicle itself stays track-unaware.
+	// Reset contract: clears every participant to Ready and returns the
+	// player vehicle to the track-owned start. The game layer calls this
+	// together with the vehicle's own reset.
 	void OnVehicleReset();
 
-	// Read-only state for future UI and verification.
+	// AI registration. Returns the participant index. Duplicate
+	// registrations return the existing index.
+	int32 RegisterParticipant(ARaceVehicle* Participant);
+
+	// Re-anchors one participant's plane tracking to its current position
+	// without logging events. Used after respawns and test teleports that
+	// are not part of the measured program.
+	void ReanchorParticipant(ARaceVehicle* Participant);
+
+	// Legacy single-participant view (participant 0). Unchanged Task 8
+	// behavior.
 	ERacePhase GetPhase() const { return Phase; }
-	int32 GetCompletedLaps() const { return CompletedLaps; }
-	int32 GetNextCheckpoint() const { return ExpectIdx; }
-	bool IsCurrentLapValid() const { return bLapValid; }
-	bool WasLastSequenceValid() const { return bLastSequenceValid; }
-	float GetLastLapTime() const { return LastLapTime; }
-	float GetBestLapTime() const { return BestLapTime; }
-	int32 GetCrossingCount() const { return CrossingLog.Num(); }
-	int32 GetIgnoredCount() const { return IgnoredLog.Num(); }
+	int32 GetCompletedLaps() const;
+	int32 GetNextCheckpoint() const;
+	bool IsCurrentLapValid() const;
+	bool WasLastSequenceValid() const;
+	float GetLastLapTime() const;
+	float GetBestLapTime() const;
+	int32 GetCrossingCount() const;
+	int32 GetIgnoredCount() const;
+
+	// Multi-participant view for AI and future UI.
+	int32 GetParticipantCount() const { return Participants.Num(); }
+	ARaceVehicle* GetParticipantVehicle(int32 Index) const;
+	int32 GetParticipantLaps(int32 Index) const;
+	bool IsParticipantLapValid(int32 Index) const;
+	bool WasParticipantLastValid(int32 Index) const;
+	bool IsParticipantFinished(int32 Index) const;
+	float GetParticipantLastLap(int32 Index) const;
 
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
 private:
-	void AdvanceRacing(float DeltaTime);
+	int32 FindParticipant(const ARaceVehicle* Participant) const;
+	void AdvanceParticipant(FRaceParticipant& P, float DeltaTime);
 	// Signed distance to a checkpoint plane; lateral offset alongside.
 	void PlaneMetrics(int32 CpIndex, const FVector& Pos, float& D, float& Lat) const;
 
 	ERacePhase Phase = ERacePhase::Ready;
 	float PhaseTime = 0.0f;
-	int32 CompletedLaps = 0;
-	int32 ExpectIdx = 0;
-	bool bLapValid = true;
-	bool bLastSequenceValid = true;
-	float LapStartTime = 0.0f;
-	float LastLapTime = 0.0f;
-	float BestLapTime = 0.0f;
 	float RaceClock = 0.0f;
-	TArray<int32> PlaneArmed;
-	TArray<float> PrevPlaneD;
-	bool bPrevInit = false;
-	TArray<int32> CrossingLog;
-	TArray<int32> IgnoredLog;
+	TArray<FRaceParticipant> Participants;
 
 	ARaceTrack* Track = nullptr;
-	ARaceVehicle* Vehicle = nullptr;
 };
