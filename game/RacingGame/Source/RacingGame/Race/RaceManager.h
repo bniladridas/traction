@@ -99,6 +99,7 @@ public:
 	bool WasParticipantLastValid(int32 Index) const;
 	bool IsParticipantFinished(int32 Index) const;
 	float GetParticipantLastLap(int32 Index) const;
+	float GetParticipantBestLap(int32 Index) const;
 
 	// Live position, 1-based, deterministic. Finished participants sort
 	// by finish sequence; the rest by laps, then along-track distance,
