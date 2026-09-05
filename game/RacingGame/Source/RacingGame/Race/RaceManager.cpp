@@ -155,6 +155,11 @@ float ARaceManager::GetParticipantLastLap(int32 Index) const
 	return Participants.IsValidIndex(Index) ? Participants[Index].LastLapTime : 0.0f;
 }
 
+float ARaceManager::GetParticipantBestLap(int32 Index) const
+{
+	return Participants.IsValidIndex(Index) ? Participants[Index].BestLapTime : 0.0f;
+}
+
 void ARaceManager::StartRace()
 {
 	if (Phase == ERacePhase::Ready)
