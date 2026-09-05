@@ -105,7 +105,6 @@ void URaceAIDriver::TickComponent(float DeltaTime, enum ELevelTick TickType, FAc
 	}
 	bDrove = true;
 
-	static double LastBeat = 0.0;
 	if (Clock - LastBeat > 2.0)
 	{
 		LastBeat = Clock;
@@ -189,7 +188,8 @@ void URaceAIDriver::TickComponent(float DeltaTime, enum ELevelTick TickType, FAc
 
 	// Pure pursuit with curvature-aware speed (Task 7 program, game-side).
 	const float Speed = Vehicle->GetForwardSpeed();
-	const FRaceTrackCenterPoint Tgt = Track->SampleAtDistance(UnwrappedS + LookaheadBase + FMath::Abs(Speed) * LookaheadSpeedGain);
+	FRaceTrackCenterPoint Tgt = Track->SampleAtDistance(UnwrappedS + LookaheadBase + FMath::Abs(Speed) * LookaheadSpeedGain);
+	Tgt.Position += FVector(-Tgt.Forward.Y, Tgt.Forward.X, 0.0f) * LineOffset;
 	const FVector ToTgt = Tgt.Position - Vehicle->GetActorLocation();
 	const float DesiredYaw = FMath::RadiansToDegrees(FMath::Atan2(ToTgt.Y, ToTgt.X));
 	const float YawErr = FRotator::NormalizeAxis(DesiredYaw - Vehicle->GetActorRotation().Yaw);
@@ -199,14 +199,14 @@ void URaceAIDriver::TickComponent(float DeltaTime, enum ELevelTick TickType, FAc
 	const FVector& DFar = Pts[(Idx + 5) % N].Forward;
 	const float TurnDeg = FMath::RadiansToDegrees(
 		FMath::Acos(FMath::Clamp(FVector::DotProduct(DNear, DFar), -1.0f, 1.0f)));
-	float Target = StraightTarget;
+	float Target = StraightTarget * PaceFactor;
 	if (TurnDeg > TurnHardDeg)
 	{
-		Target = HairpinTarget;
+		Target = HairpinTarget * PaceFactor;
 	}
 	else if (TurnDeg > TurnSoftDeg)
 	{
-		Target = TurnTarget;
+		Target = TurnTarget * PaceFactor;
 	}
 	if (Speed < Target - 50.0f)
 	{
