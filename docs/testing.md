@@ -4,8 +4,8 @@ Three verification categories, never mixed:
 
 1. **Functional**: does the behavior happen? Headless standalone runs with
    scripted input through the real gameplay path, transform logs, and
-   `results.json` with predefined thresholds. Current suite: 70 flags
-   across eleven artifacts (see the frozen layers below).
+   `results.json` with predefined thresholds. Current suite: 76 flags
+   across twelve artifacts (see the frozen layers below).
 
 ## Regression layers (frozen, cumulative)
 
@@ -35,6 +35,8 @@ tasks add layers; none edit earlier ones.
   order, no deadlock, reset clearing on the field map.
 - Task 13 (`Saved/Task13E2E/`): pace assignment, lap spread, emerged
   overtake, pace finish, no deadlock, reset clearing on the pace map.
+- Task 14 (`Saved/Task14E2E/`): field spawn, progress, laps, finish
+  order, no deadlock, reset clearing on the field6 map.
 
 CI (`test.yml`) validates repository invariants on GitHub-hosted runners:
 verification docs, frozen threshold namespaces, headers, tooling syntax,
@@ -62,12 +64,12 @@ GenerateProjectFiles.sh -project="game/RacingGame/RacingGame.uproject" -game -en
 Build.sh TP_VehicleAdvEditor Mac Development -project="game/RacingGame/RacingGame.uproject"
 ```
 
-Run all eight E2E programs (flat map, circuit map, race-state map, AI
-map, camera map, position map, field map, pace map),
-then require every flag true across all eleven artifacts (30 frozen
+Run all nine E2E programs (flat map, circuit map, race-state map, AI
+map, camera map, position map, field map, pace map, field6 map),
+then require every flag true across all twelve artifacts (30 frozen
 regression flags plus 10 Task 8 gates plus 6 Task 9 gates plus 6 Task
 10 gates plus 6 Task 11 gates plus 6 Task 12 gates plus 6 Task 13
-gates):
+gates plus 6 Task 14 gates):
 
 ```text
 python3 tools/check_regression.py
