@@ -1,6 +1,6 @@
 # Architecture: traction vehicle and track systems
 
-Status: Task 10 state. This document describes the RacingGame-owned
+Status: Task 15 state. This document describes the RacingGame-owned
 architecture as it exists; the template vehicle code is a separate,
 untouched neighbor (project defaults reference it; automated runs
 override via `?game=`), not a dependency.
@@ -106,6 +106,17 @@ teleports instead of smoothing across discontinuities. Every pawn
 (including AI) carries one; tuning lives in `FRaceCameraConfig` via the
 vehicle config.
 
+## Positions, field, and results (Tasks 11-15)
+
+`ARaceManager::GetPosition` derives live standings from finished flags,
+finish sequence, completed laps, and centerline distance with a
+deterministic index tie-break. `ARaceTrack::GetGridPose` assigns
+staggered grid slots from centerline data. Per-driver pace and line
+properties produce lap-time spread through identical physics. Finish
+fills an immutable `FRaceResults` snapshot (ordered indices, laps, best
+and final times), cleared on reset. Progression: 2-participant order,
+3-car field, pace overtake, 6-car field, recorded results.
+
 ## Test environments
 
 - `/Game/Task2/Task2_TestTrack`: 200 m flat floor, PlayerStart, sun.
@@ -113,8 +124,9 @@ vehicle config.
 - `/Game/Track/Track1_TestCircuit`: PlayerStart, sun; the track actor
   builds the ~123 m circuit at runtime. Carries the Task 7 validation
   and lap program, the Task 8 teleport state program, the Task 9 AI
-  program, and the Task 10 camera program, each selected by its own
-  `?game=` GameMode.
+  program, the Task 10 camera program, the Task 11 position program,
+  the Task 12/14 field programs, the Task 13 pace program, and the
+  Task 15 results program, each selected by its own `?game=` GameMode.
 - Both maps created by `Content/Python/*_create_map.py`, kept
   regenerable. Test GameModes are selected with `?game=` so project
   defaults stay untouched.

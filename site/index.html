@@ -20,12 +20,12 @@
 <main>
 <section>
 <h2>Status</h2>
-<p>Early development. Tasks 1 through 12 are verified headlessly: project
+<p>Early development. Tasks 1 through 15 are verified headlessly: project
 foundation, driving prototype, vehicle dynamics, data-driven
 architecture, suspension and tires, drivetrain, first circuit with a
 deterministic lap, race loop with lap state, one AI rival, chase
-cameras, live race positions, and a multi-car field. Next is Task 13.
-There is no public release yet.</p>
+cameras, live race positions, a multi-car field, varied AI pace, and
+recorded race results. Next is Task 16. There is no public release yet.</p>
 </section>
 <section>
 <h2>Project</h2>
@@ -46,7 +46,8 @@ forces on a friction circle), an engine/transmission/differential
 drivetrain, a runtime-built circuit (road collision, boundaries,
 centerline, ordered checkpoints), a race manager (phases, laps, timing),
 a pursuit-driving AI rival, look-ahead chase cameras, live race
-positions, and a multi-car field on track-derived grid slots, all
+positions, a multi-car field on track-derived grid slots, varied AI
+pace, and recorded race results, all
 covered by automated headless verification. Template vehicle code is retained for
 project defaults and
 untouched by game code.
@@ -69,9 +70,13 @@ and <a href="https://github.com/bniladridas/traction/blob/main/docs/testing.md">
 <tr><td>Task 10: cameras</td><td>PASSED</td><td>BLOCKED</td><td>NOT VERIFIED</td></tr>
 <tr><td>Task 11: race positions</td><td>PASSED</td><td>BLOCKED</td><td>NOT VERIFIED</td></tr>
 <tr><td>Task 12: multi-car field</td><td>PASSED</td><td>BLOCKED</td><td>NOT VERIFIED</td></tr>
+<tr><td>Task 13: AI pace variation</td><td>PASSED</td><td>NOT VERIFIED</td><td>NOT VERIFIED</td></tr>
+<tr><td>Task 14: six-car field</td><td>PASSED</td><td>NOT VERIFIED</td><td>NOT VERIFIED</td></tr>
+<tr><td>Task 15: race results</td><td>PASSED</td><td>NOT VERIFIED</td><td>NOT VERIFIED</td></tr>
 </table>
-<p>Visual verification is blocked on a missing Xcode Metal Toolchain
-component in the development environment. Full evidence:
+<p>Rendered Metal verification is resolved (first frames captured;
+see Screenshots). Per-task visual status above reflects whether that
+task ran a capture pass. Full evidence:
 <a href="https://github.com/bniladridas/traction/blob/main/docs/verification/task-1-e2e.md">task-1-e2e.md</a>,
 <a href="https://github.com/bniladridas/traction/blob/main/docs/verification/task-2-e2e.md">task-2-e2e.md</a>,
 <a href="https://github.com/bniladridas/traction/blob/main/docs/verification/task-3-e2e.md">task-3-e2e.md</a>,
@@ -83,7 +88,10 @@ component in the development environment. Full evidence:
 <a href="https://github.com/bniladridas/traction/blob/main/docs/verification/task-9-e2e.md">task-9-e2e.md</a>,
 <a href="https://github.com/bniladridas/traction/blob/main/docs/verification/task-10-e2e.md">task-10-e2e.md</a>,
 <a href="https://github.com/bniladridas/traction/blob/main/docs/verification/task-11-e2e.md">task-11-e2e.md</a>,
-<a href="https://github.com/bniladridas/traction/blob/main/docs/verification/task-12-e2e.md">task-12-e2e.md</a>.</p>
+<a href="https://github.com/bniladridas/traction/blob/main/docs/verification/task-12-e2e.md">task-12-e2e.md</a>,
+<a href="https://github.com/bniladridas/traction/blob/main/docs/verification/task-13-e2e.md">task-13-e2e.md</a>,
+<a href="https://github.com/bniladridas/traction/blob/main/docs/verification/task-14-e2e.md">task-14-e2e.md</a>,
+<a href="https://github.com/bniladridas/traction/blob/main/docs/verification/task-15-e2e.md">task-15-e2e.md</a>.</p>
 </section>
 <section>
 <h2>Screenshots</h2>
@@ -118,7 +126,8 @@ rendering, not of gameplay quality, performance, or final graphics.</p>
 <li>First track: circuit geometry, checkpoints, deterministic lap (done)</li>
 <li>Racing: lap systems, timing, race rules, AI rival (done)</li>
 <li>Cameras: chase cameras, look-ahead (done)</li>
-<li>Positions and field: live standings, 3-car grid (done)</li>
+<li>Positions and field: live standings, 6-car grid (done)</li>
+<li>Pace and results: AI pace tiers, recorded race results (done)</li>
 <li>Graphics: final vehicle, materials, lighting</li>
 <li>Audio and UI</li>
 <li>Optimization for Apple Silicon</li>

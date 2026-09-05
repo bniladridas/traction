@@ -30,7 +30,7 @@ direction the architecture supports, not a feature list.
 
 ## Current state
 
-Prototype renders from the real Metal renderer (Task 12 state).
+Prototype renders from the real Metal renderer (Task 15 state).
 Untextured, no art pass; shown for discussion of actual state, not as
 quality, performance, or gameplay claims.
 
@@ -58,7 +58,7 @@ traction/
 ├── ROADMAP.md
 ├── AGENTS.md
 ├── docs/
-│   ├── architecture.md      # current system map (Task 12 state)
+│   ├── architecture.md      # current system map (Task 15 state)
 │   ├── testing.md           # verification philosophy + regression layers
 │   ├── vehicles.md          # V1 car: custom movement, config, drivetrain
 │   ├── track.md             # V1 circuit: config, collision, checkpoints
@@ -66,7 +66,7 @@ traction/
 │   ├── graphics.md
 │   ├── audio.md
 │   ├── release.md
-│   └── verification/        # per-task E2E evidence (tasks 1-12)
+│   └── verification/        # per-task E2E evidence (tasks 1-15)
 ├── site/                    # static project site (GitHub Pages)
 └── game/                    # UE5 project (RacingGame module + template base)
     └── RacingGame/
