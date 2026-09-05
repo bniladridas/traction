@@ -31,13 +31,23 @@ public:
 	// Steering normalizer in degrees.
 	UPROPERTY(EditAnywhere, Category = "Race|AI")
 	float SteerGainDeg = 18.0f;
-	// Speed targets in cm/s.
+	// Speed targets in cm/s, scaled by PaceFactor.
 	UPROPERTY(EditAnywhere, Category = "Race|AI")
 	float StraightTarget = 1200.0f;
 	UPROPERTY(EditAnywhere, Category = "Race|AI")
 	float TurnTarget = 600.0f;
 	UPROPERTY(EditAnywhere, Category = "Race|AI")
 	float HairpinTarget = 400.0f;
+	// Pace multiplier on all speed targets. Per-instance assignment
+	// produces lap-time spread through identical physics; 1.0 is nominal.
+	UPROPERTY(EditAnywhere, Category = "Race|AI")
+	float PaceFactor = 1.0f;
+	float GetPaceFactor() const { return PaceFactor; }
+	// Lateral line offset in cm applied to the pursuit target (right
+	// positive). Lets two rivals run parallel lines so a pace overtake
+	// completes without contact. Not a reaction to other cars.
+	UPROPERTY(EditAnywhere, Category = "Race|AI")
+	float LineOffset = 0.0f;
 	// Curvature thresholds in degrees over the lookahead window.
 	UPROPERTY(EditAnywhere, Category = "Race|AI")
 	float TurnSoftDeg = 12.0f;
@@ -76,6 +86,7 @@ private:
 	bool bAnchored = false;
 	int32 RecoveryCount = 0;
 	bool bDrove = false;
+	double LastBeat = 0.0;
 	float OfftrackTime = 0.0f;
 	float CheckTime = 0.0f;
 	float CheckS = 0.0f;
