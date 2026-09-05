@@ -570,7 +570,10 @@ void ATask2Probe::WriteResults(bool bOk, const FString& Note) const
 	const FString Dir = FPaths::ProjectSavedDir() + TEXT("Task2E2E/");
 	IPlatformFile& PF = FPlatformFileManager::Get().GetPlatformFile();
 	PF.CreateDirectoryTree(*Dir);
-	FFileHelper::SaveStringToFile(Json, *(Dir + TEXT("results.json")));
+	// Rendered capture runs record beside the frozen baseline instead of
+	// overwriting it: same schema and thresholds, separate file.
+	const FString ResultsFile = bShotsEnabled ? TEXT("results-rendered.json") : TEXT("results.json");
+	FFileHelper::SaveStringToFile(Json, *(Dir + ResultsFile));
 	UE_LOG(LogTemp, Display, TEXT("TASK2E2E: results written, fwd=%.1f brake=%.3f rev=%.1f steer=%.2f cam=%.1f/%.1f"),
 		FwdDist, BrakeRatio, RevBack, SteerDelta, CamTravel, PawnTravel);
 
@@ -641,7 +644,10 @@ void ATask2Probe::WriteTask6Artifact(bool bFwd, bool bBrake, bool bRev, bool bSt
 	const FString Dir = FPaths::ProjectSavedDir() + TEXT("Task6E2E/");
 	IPlatformFile& PF = FPlatformFileManager::Get().GetPlatformFile();
 	PF.CreateDirectoryTree(*Dir);
-	FFileHelper::SaveStringToFile(Json, *(Dir + TEXT("results.json")));
+	// Rendered capture runs record beside the frozen baseline instead of
+	// overwriting it: same schema and thresholds, separate file.
+	const FString ResultsFile = bShotsEnabled ? TEXT("results-rendered.json") : TEXT("results.json");
+	FFileHelper::SaveStringToFile(Json, *(Dir + ResultsFile));
 	UE_LOG(LogTemp, Display, TEXT("TASK2E2E: task6 artifact written"));
 }
 
@@ -703,7 +709,10 @@ void ATask2Probe::WriteTask5Artifact(bool bFwd, bool bBrake, bool bRev, bool bSt
 	const FString Dir = FPaths::ProjectSavedDir() + TEXT("Task5E2E/");
 	IPlatformFile& PF = FPlatformFileManager::Get().GetPlatformFile();
 	PF.CreateDirectoryTree(*Dir);
-	FFileHelper::SaveStringToFile(Json, *(Dir + TEXT("results.json")));
+	// Rendered capture runs record beside the frozen baseline instead of
+	// overwriting it: same schema and thresholds, separate file.
+	const FString ResultsFile = bShotsEnabled ? TEXT("results-rendered.json") : TEXT("results.json");
+	FFileHelper::SaveStringToFile(Json, *(Dir + ResultsFile));
 	UE_LOG(LogTemp, Display, TEXT("TASK2E2E: task5 artifact written"));
 }
 
@@ -763,6 +772,9 @@ void ATask2Probe::WriteTask4Artifact(bool bFwd, bool bBrake, bool bRev, bool bSt
 	const FString Dir = FPaths::ProjectSavedDir() + TEXT("Task4E2E/");
 	IPlatformFile& PF = FPlatformFileManager::Get().GetPlatformFile();
 	PF.CreateDirectoryTree(*Dir);
-	FFileHelper::SaveStringToFile(Json, *(Dir + TEXT("results.json")));
+	// Rendered capture runs record beside the frozen baseline instead of
+	// overwriting it: same schema and thresholds, separate file.
+	const FString ResultsFile = bShotsEnabled ? TEXT("results-rendered.json") : TEXT("results.json");
+	FFileHelper::SaveStringToFile(Json, *(Dir + ResultsFile));
 	UE_LOG(LogTemp, Display, TEXT("TASK2E2E: task4 artifact written"));
 }

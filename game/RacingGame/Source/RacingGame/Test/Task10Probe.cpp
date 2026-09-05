@@ -378,7 +378,10 @@ void ATask10Probe::WriteResults(bool bOk, const FString& Note) const
 	const FString Dir = FPaths::ProjectSavedDir() + TEXT("Task10E2E/");
 	IPlatformFile& PF = FPlatformFileManager::Get().GetPlatformFile();
 	PF.CreateDirectoryTree(*Dir);
-	FFileHelper::SaveStringToFile(Json, *(Dir + TEXT("results.json")));
+	// Rendered capture runs record beside the frozen baseline instead of
+	// overwriting it: same schema and thresholds, separate file.
+	const FString ResultsFile = bShotsEnabled ? TEXT("results-rendered.json") : TEXT("results.json");
+	FFileHelper::SaveStringToFile(Json, *(Dir + ResultsFile));
 	FString Manifest = TEXT("{\"shots_requested\":");
 	Manifest += bShotsEnabled ? TEXT("true") : TEXT("false");
 	Manifest += TEXT(",\"renderer_note\":\"Captures go through the real renderer pipeline; PNG files materialize only in rendered (non-nullrhi) runs.\",\"captures\":[");
