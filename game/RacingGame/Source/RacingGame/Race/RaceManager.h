@@ -26,6 +26,40 @@ enum class ERacePhase : uint8
 class ARaceTrack;
 class ARaceVehicle;
 
+// One finished participant's recorded outcome. Entries exist only for
+// participants that actually finished; see HasResults.
+USTRUCT(BlueprintType)
+struct FRaceResultEntry
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	int32 ParticipantIndex = -1;
+
+	UPROPERTY()
+	int32 CompletedLaps = 0;
+
+	UPROPERTY()
+	float BestLapTime = 0.0f;
+
+	UPROPERTY()
+	float LastLapTime = 0.0f;
+};
+
+// Immutable finish snapshot, filled once when every participant has
+// finished and cleared on reset. Read-only for future UI.
+USTRUCT(BlueprintType)
+struct FRaceResults
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	bool bFinalized = false;
+
+	UPROPERTY()
+	TArray<FRaceResultEntry> Ordered;
+};
+
 // Per-racer progression state. Phases and the clock stay global.
 USTRUCT(BlueprintType)
 struct FRaceParticipant
@@ -106,6 +140,10 @@ public:
 	// then participant index. Returns -1 for unknown racers.
 	int32 GetPosition(const ARaceVehicle* Participant) const;
 
+	// Finish snapshot access. Valid only when HasResults is true.
+	bool HasResults() const { return Results.bFinalized; }
+	const FRaceResults& GetResults() const { return Results; }
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
@@ -120,6 +158,7 @@ private:
 	float PhaseTime = 0.0f;
 	float RaceClock = 0.0f;
 	int32 FinishCounter = 0;
+	FRaceResults Results;
 	TArray<FRaceParticipant> Participants;
 
 	ARaceTrack* Track = nullptr;
