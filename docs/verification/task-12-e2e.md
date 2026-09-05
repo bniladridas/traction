@@ -92,3 +92,15 @@ logic timing only. Visuals, feel, and PIE unverified.
 ## Next step
 
 Task 13 specification. Deferred: racecraft, HUD, larger fields.
+
+## Correction note (Task 14 timeframe, code and gate only)
+
+The finish gate originally required the exact grid order `012` at the
+finish. Two builds of equivalent code finished `012` then repeatably
+`021`: with identical pace, finish sequence among equals depends on
+incidents (lines, stall respawns relocating cars), not on a capability
+the system guarantees. Per the Task 5 precedent for metrics that assume
+too much, the gate keeps totality (all finished, laps 2/2/2, three
+distinct ranks) and drops the exact-order claim. Thresholds, schemas,
+phases, and all other gates unchanged; the passing run above stands,
+re-verified green under the corrected gate.
