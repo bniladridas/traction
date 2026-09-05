@@ -175,9 +175,36 @@ void ARaceTrack::GetGridPose(int32 Slot, FVector& Loc, float& YawDeg) const
 		YawDeg = StartYawDeg;
 		return;
 	}
-	const float S = TrackConfig.StartLineDistance - TrackConfig.SpawnBackoff - static_cast<float>(Slot) * 100.0f;
+	// Staggered slot table (s distance, lateral offset). Slots 1-2 keep
+	// their historical values exactly; slots 3+ were fitted offline for
+	// pairwise box clearance (min 224 cm) inside the lane, all s >= 0.
+	// See task-12/14 reports for the proof.
+	float S = 0.0f;
+	float Lat = 0.0f;
+	switch (Slot)
+	{
+	case 1:
+		S = TrackConfig.StartLineDistance - TrackConfig.SpawnBackoff - 100.0f;
+		Lat = -200.0f;
+		break;
+	case 2:
+		S = TrackConfig.StartLineDistance - TrackConfig.SpawnBackoff - 200.0f;
+		Lat = 200.0f;
+		break;
+	case 3:
+		S = 50.0f;
+		Lat = -240.0f;
+		break;
+	case 4:
+		S = 50.0f;
+		Lat = 0.0f;
+		break;
+	default:
+		S = 0.0f;
+		Lat = 330.0f;
+		break;
+	}
 	const FRaceTrackCenterPoint P = SampleAtDistance(S);
-	const float Lat = (Slot % 2 == 1) ? -200.0f : 200.0f;
 	const FVector Right(-P.Forward.Y, P.Forward.X, 0.0f);
 	Loc = P.Position + Right * Lat + FVector(0.0f, 0.0f, 60.0f);
 	YawDeg = FMath::RadiansToDegrees(FMath::Atan2(P.Forward.Y, P.Forward.X));
