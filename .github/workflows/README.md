@@ -32,4 +32,33 @@ part checkable automatically is checked consistently.
 - `site.yml`: static site validation and Pages deployment.
 
 Unreal build and headless E2E run on the Mac per `docs/testing.md`;
-`tools/check_regression.py` gates the 52 flags locally.
+`tools/check_regression.py` gates the 82 flags locally.
+
+## Why no macOS Unreal CI
+
+Traction does not run Unreal application verification in GitHub-hosted
+macOS Actions. The constraint is practical rather than architectural.
+
+Unreal Engine 5.8.2 occupies approximately 43 GB on the development
+Mac, while standard GitHub-hosted macOS runners provide substantially
+less free disk space before the repository, build products, and shader
+data are considered. Larger macOS runners introduce additional cost and
+availability constraints.
+
+The current Unreal installation also depends on the Epic Games Launcher
+and account-bound installation flow established during Milestone 1.
+Reproducing that installation on ephemeral CI runners would add
+credential and provisioning complexity, large cold-start costs, and
+substantially longer macOS CI runs.
+
+For these reasons, the verification boundary remains deliberate:
+
+- GitHub-hosted Ubuntu Actions verify repository invariants,
+  documentation, configuration, and frozen regression contracts.
+- The Apple Silicon development Mac runs the Unreal build, headless E2E
+  programs, full regression suite, and rendered Metal verification.
+
+The local Mac currently runs the complete regression suite in minutes.
+Until the cost, provisioning, and storage constraints change
+materially, adding macOS Unreal CI would add complexity without
+providing a proportionate verification benefit.
