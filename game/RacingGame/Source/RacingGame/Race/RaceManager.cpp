@@ -175,6 +175,8 @@ void ARaceManager::OnVehicleReset()
 	Phase = ERacePhase::Ready;
 	PhaseTime = 0.0f;
 	FinishCounter = 0;
+	Results.bFinalized = false;
+	Results.Ordered.Reset();
 	for (FRaceParticipant& P : Participants)
 	{
 		P.ExpectIdx = 0;
@@ -316,7 +318,27 @@ void ARaceManager::AdvanceParticipant(FRaceParticipant& P, float DeltaTime)
 						if (bAllDone)
 						{
 							Phase = ERacePhase::Finished;
-							UE_LOG(LogTemp, Display, TEXT("RACE8: finished"));
+							Results.bFinalized = true;
+							Results.Ordered.Reset();
+							TArray<int32> Order;
+							for (int32 PIdx = 0; PIdx < Participants.Num(); ++PIdx)
+							{
+								Order.Add(PIdx);
+							}
+							Order.Sort([this](int32 A, int32 B)
+							{
+								return Participants[A].FinishSeq < Participants[B].FinishSeq;
+							});
+							for (int32 Idx : Order)
+							{
+								FRaceResultEntry E;
+								E.ParticipantIndex = Idx;
+								E.CompletedLaps = Participants[Idx].CompletedLaps;
+								E.BestLapTime = Participants[Idx].BestLapTime;
+								E.LastLapTime = Participants[Idx].LastLapTime;
+								Results.Ordered.Add(E);
+							}
+							UE_LOG(LogTemp, Display, TEXT("RACE8: finished, results finalized (%d)"), Results.Ordered.Num());
 						}
 					}
 				}
