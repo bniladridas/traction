@@ -310,6 +310,37 @@ void ARaceManager::AdvanceParticipant(FRaceParticipant& P, float DeltaTime)
 						P.bFinished = true;
 						P.FinishSeq = FinishCounter++;
 						UE_LOG(LogTemp, Display, TEXT("RACE8: participant finished (%d laps, seq %d)"), P.CompletedLaps, P.FinishSeq);
+						// The results table rebuilds on every finish from
+						// all currently finished participants, so it is
+						// always available and current. Parked pawns that
+						// never engage simply never appear instead of
+						// blocking the table forever.
+						Results.bFinalized = true;
+						Results.Ordered.Reset();
+						TArray<int32> Order;
+						for (int32 PIdx = 0; PIdx < Participants.Num(); ++PIdx)
+						{
+							if (Participants[PIdx].bFinished)
+							{
+								Order.Add(PIdx);
+							}
+						}
+						Order.Sort([this](int32 A, int32 B)
+						{
+							return Participants[A].FinishSeq < Participants[B].FinishSeq;
+						});
+						for (int32 Idx : Order)
+						{
+							FRaceResultEntry E;
+							E.ParticipantIndex = Idx;
+							E.CompletedLaps = Participants[Idx].CompletedLaps;
+							E.BestLapTime = Participants[Idx].BestLapTime;
+							E.LastLapTime = Participants[Idx].LastLapTime;
+							Results.Ordered.Add(E);
+						}
+						UE_LOG(LogTemp, Display, TEXT("RACE8: results updated (%d finishers)"), Results.Ordered.Num());
+						// Global finish keeps the original rule: every
+						// registered participant finished.
 						bool bAllDone = true;
 						for (const FRaceParticipant& Q : Participants)
 						{
@@ -318,27 +349,7 @@ void ARaceManager::AdvanceParticipant(FRaceParticipant& P, float DeltaTime)
 						if (bAllDone)
 						{
 							Phase = ERacePhase::Finished;
-							Results.bFinalized = true;
-							Results.Ordered.Reset();
-							TArray<int32> Order;
-							for (int32 PIdx = 0; PIdx < Participants.Num(); ++PIdx)
-							{
-								Order.Add(PIdx);
-							}
-							Order.Sort([this](int32 A, int32 B)
-							{
-								return Participants[A].FinishSeq < Participants[B].FinishSeq;
-							});
-							for (int32 Idx : Order)
-							{
-								FRaceResultEntry E;
-								E.ParticipantIndex = Idx;
-								E.CompletedLaps = Participants[Idx].CompletedLaps;
-								E.BestLapTime = Participants[Idx].BestLapTime;
-								E.LastLapTime = Participants[Idx].LastLapTime;
-								Results.Ordered.Add(E);
-							}
-							UE_LOG(LogTemp, Display, TEXT("RACE8: finished, results finalized (%d)"), Results.Ordered.Num());
+							UE_LOG(LogTemp, Display, TEXT("RACE8: finished"));
 						}
 					}
 				}
