@@ -22,7 +22,7 @@ Target: 1080p60 on Apple Silicon. Freeze features at RC.
   (Task 9); chase cameras verified (Task 10); live positions verified
   (Task 11); 3-car field verified (Task 12); AI pace variation verified
   (Task 13); six-car field verified (Task 14); race results verified
-  (Task 15). Next: Task 16. No HUD,
+  (Task 15); full 3-lap race verified (Task 16). Next: Task 17. No HUD,
   multiplayer, or presentation yet.
 
 ## Future

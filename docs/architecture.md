@@ -1,6 +1,6 @@
 # Architecture: traction vehicle and track systems
 
-Status: Task 15 state. This document describes the RacingGame-owned
+Status: Task 16 state. This document describes the RacingGame-owned
 architecture as it exists; the template vehicle code is a separate,
 untouched neighbor (project defaults reference it; automated runs
 override via `?game=`), not a dependency.
@@ -84,7 +84,9 @@ start; spawn transforms are not hard-coded in the vehicle.
 track's checkpoint planes: Ready, Countdown, Racing, Finished phases,
 ordered progression with per-plane re-arm, lap validity, counted laps
 with last/best timing, finish lock, and a reset contract (progress to
-Ready plus return to the track-owned start). Vehicles know nothing of
+Ready plus return to the track-owned start). The results table rebuilds
+on every finish from currently finished participants; global finish
+still requires all registered. Vehicles know nothing of
 lap rules. Checkpoint count and start/finish resolve from the track;
 the race config owns lap count and countdown only.
 
@@ -126,7 +128,8 @@ and final times), cleared on reset. Progression: 2-participant order,
   and lap program, the Task 8 teleport state program, the Task 9 AI
   program, the Task 10 camera program, the Task 11 position program,
   the Task 12/14 field programs, the Task 13 pace program, and the
-  Task 15 results program, each selected by its own `?game=` GameMode.
+  Task 15 results program, and the Task 16 full-race program, each selected by its own
+  `?game=` GameMode.
 - Both maps created by `Content/Python/*_create_map.py`, kept
   regenerable. Test GameModes are selected with `?game=` so project
   defaults stay untouched.
