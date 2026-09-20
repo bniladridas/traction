@@ -20,13 +20,14 @@
 <main>
 <section>
 <h2>Status</h2>
-<p>Early development. Tasks 1 through 17 are verified headlessly: project
+<p>Early development. Tasks 1 through 18 are verified headlessly: project
 foundation, driving prototype, vehicle dynamics, data-driven
 architecture, suspension and tires, drivetrain, first circuit with a
 deterministic lap, race loop with lap state, one AI rival, chase
 cameras, live race positions, a multi-car field, varied AI pace,
-recorded race results, a full 3-lap race, and a player-facing race HUD
-data path. Next is Task 18. There is no public release yet.</p>
+recorded race results, a full 3-lap race, a player-facing race HUD
+data path, and a cockpit camera with view selection. Next is Task 19.
+There is no public release yet.</p>
 </section>
 <section>
 <h2>Project</h2>
@@ -48,7 +49,8 @@ drivetrain, a runtime-built circuit (road collision, boundaries,
 centerline, ordered checkpoints), a race manager (phases, laps, timing),
 a pursuit-driving AI rival, look-ahead chase cameras, live race
 positions, a multi-car field on track-derived grid slots, varied AI
-pace, and recorded race results, all
+pace, recorded race results, and a rigid cockpit camera with view
+selection, all
 covered by automated headless verification. Template vehicle code is retained for
 project defaults and
 untouched by game code.
@@ -76,6 +78,7 @@ and <a href="https://github.com/bniladridas/traction/blob/main/docs/testing.md">
 <tr><td>Task 15: race results</td><td>PASSED</td><td>NOT VERIFIED</td><td>NOT VERIFIED</td></tr>
 <tr><td>Task 16: full 3-lap race</td><td>PASSED</td><td>NOT VERIFIED</td><td>NOT VERIFIED</td></tr>
 <tr><td>Task 17: race HUD</td><td>PASSED</td><td>NOT VERIFIED</td><td>NOT VERIFIED</td></tr>
+<tr><td>Task 18: cockpit camera and view selection</td><td>PASSED</td><td>NOT VERIFIED</td><td>NOT VERIFIED</td></tr>
 </table>
 <p>Rendered Metal verification is resolved (first frames captured;
 see Screenshots). Per-task visual status above reflects whether that
@@ -96,7 +99,8 @@ task ran a capture pass. Full evidence:
 <a href="https://github.com/bniladridas/traction/blob/main/docs/verification/task-14-e2e.md">task-14-e2e.md</a>,
 <a href="https://github.com/bniladridas/traction/blob/main/docs/verification/task-15-e2e.md">task-15-e2e.md</a>,
 <a href="https://github.com/bniladridas/traction/blob/main/docs/verification/task-16-e2e.md">task-16-e2e.md</a>,
-<a href="https://github.com/bniladridas/traction/blob/main/docs/verification/task-17-e2e.md">task-17-e2e.md</a>.</p>
+<a href="https://github.com/bniladridas/traction/blob/main/docs/verification/task-17-e2e.md">task-17-e2e.md</a>,
+<a href="https://github.com/bniladridas/traction/blob/main/docs/verification/task-18-e2e.md">task-18-e2e.md</a>.</p>
 </section>
 <section>
 <h2>Screenshots</h2>

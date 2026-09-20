@@ -1,6 +1,6 @@
 # Architecture: traction vehicle and track systems
 
-Status: Task 17 state. This document describes the RacingGame-owned
+Status: Task 18 state. This document describes the RacingGame-owned
 architecture as it exists; the template vehicle code is a separate,
 untouched neighbor (project defaults reference it; automated runs
 override via `?game=`), not a dependency.
@@ -17,7 +17,7 @@ game/RacingGame/Source/
 │   │   └── RaceVehicleConfig.*    # FRaceVehicleConfig: single tunable set
 │   ├── Camera/
 │   │   ├── RaceChaseCamera.*      # look-ahead chase driver (reads pawn only)
-│   │   └── RaceCameraConfig.*     # FRaceCameraConfig: chase tuning
+│   │   └── RaceCameraConfig.*     # FRaceCameraConfig: chase + cockpit tuning
 │   ├── Track/
 │   │   ├── RaceTrack.*            # circuit actor: collision, centerline, checkpoints
 │   │   └── RaceTrackConfig.*      # FRaceTrackConfig: single track data set
@@ -36,12 +36,14 @@ game/RacingGame/Source/
 │       ├── RaceAITestGameMode.*       # AI harness GameMode
 │       ├── RaceCameraTestGameMode.*   # camera harness GameMode
 │       ├── RaceHudTestGameMode.*      # HUD harness GameMode
+│       ├── RaceCockpitTestGameMode.*  # cockpit camera harness GameMode
 │       ├── Task2Probe.*              # Tasks 2/3/5/6 metrics (frozen schemas)
 │       ├── Task7Probe.*              # Task 7 validation + lap driver
 │       ├── Task8Probe.*              # Task 8 teleport state program
 │       ├── Task9Probe.*              # Task 9 AI participation program
 │       ├── Task10Probe.*             # Task 10 camera measurement program
-│       └── Task17Probe.*             # Task 17 HUD read-out program
+│       ├── Task17Probe.*             # Task 17 HUD read-out program
+│       └── Task18Probe.*             # Task 18 cockpit view program
 └── TP_VehicleAdv/         # Epic template code and content (retained, see above)
 ```
 
@@ -113,6 +115,17 @@ teleports instead of smoothing across discontinuities. Every pawn
 (including AI) carries one; tuning lives in `FRaceCameraConfig` via the
 vehicle config.
 
+## View selection and cockpit camera (Task 18)
+
+`ARaceVehicle` now owns a second `UCameraComponent` on the root: the
+rigid cockpit camera (fixed offset, configured pitch and FOV, no spring
+arm, no smoothing). `AActor::CalcCamera` picks the first active camera
+component, so `SetViewMode`/`CycleView` select the view purely by
+component activation. DefaultView (default Chase) is applied in
+BeginPlay; `SetCameraConfig` re-applies the whole camera block from a
+config for data-driven tuning. The `RaceView` action (default C) maps
+to `OnCycleView` -> `CycleView`. Task 10 chase logic is untouched.
+
 ## Positions, field, and results (Tasks 11-15)
 
 `ARaceManager::GetPosition` derives live standings from finished flags,
@@ -133,9 +146,9 @@ and final times), cleared on reset. Progression: 2-participant order,
   and lap program, the Task 8 teleport state program, the Task 9 AI
   program, the Task 10 camera program, the Task 11 position program,
   the Task 12/14 field programs, the Task 13 pace program, and the
-  Task 15 results program, the Task 16 full-race program, and the
-  Task 17 HUD program, each selected by its own
-  `?game=` GameMode.
+  Task 15 results program, the Task 16 full-race program, the
+  Task 17 HUD program, and the Task 18 cockpit program, each selected
+  by its own `?game=` GameMode.
 - Both maps created by `Content/Python/*_create_map.py`, kept
   regenerable. Test GameModes are selected with `?game=` so project
   defaults stay untouched.
