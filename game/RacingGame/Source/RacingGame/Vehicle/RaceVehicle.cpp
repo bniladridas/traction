@@ -39,11 +39,21 @@ ARaceVehicle::ARaceVehicle()
 	ChaseCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("ChaseCamera"));
 	ChaseCamera->SetupAttachment(CameraArm);
 
+	CockpitCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("CockpitCamera"));
+	CockpitCamera->SetupAttachment(RootComponent);
+	// Note: the engine auto-activates CameraComponents on registration;
+	// the cockpit must stay off until SetViewMode or BeginPlay owns it.
+	CockpitCamera->SetAutoActivate(false);
+	CockpitCamera->SetActive(false);
+
 	VehicleMovement = CreateDefaultSubobject<URaceVehicleMovement>(TEXT("VehicleMovement"));
-
 	Drivetrain = CreateDefaultSubobject<URaceDrivetrain>(TEXT("Drivetrain"));
-
 	ChaseCamDriver = CreateDefaultSubobject<URaceChaseCamera>(TEXT("ChaseCamDriver"));
+
+	// Default to the chase view so Task 10 behavior is retained. The
+	// Task 18 GameMode or a SetViewMode call activates the cockpit.
+	ChaseCamera->SetActive(true);
+	CockpitCamera->SetActive(false);
 }
 
 void ARaceVehicle::BeginPlay()
@@ -53,13 +63,34 @@ void ARaceVehicle::BeginPlay()
 	VehicleMovement->ApplyConfig(VehicleConfig);
 	VehicleMovement->SetDrivetrain(Drivetrain);
 	Drivetrain->ApplyConfig(VehicleConfig);
+	ApplyCameraBlock();
+	SettleToGround();
+	InitialTransform = GetActorTransform();
+}
+
+void ARaceVehicle::SetCameraConfig(const FRaceCameraConfig& Config)
+{
+	VehicleConfig.Camera = Config;
+	ApplyCameraBlock();
+}
+
+void ARaceVehicle::ApplyCameraBlock()
+{
 	if (ChaseCamDriver)
 	{
 		ChaseCamDriver->CameraConfig = VehicleConfig.Camera;
 		ChaseCamDriver->Init(CameraArm, ChaseCamera);
 	}
-	SettleToGround();
-	InitialTransform = GetActorTransform();
+	if (CockpitCamera)
+	{
+		CockpitCamera->SetRelativeLocation(VehicleConfig.Camera.CockpitOffset);
+		CockpitCamera->SetRelativeRotation(FRotator(VehicleConfig.Camera.CockpitPitchDeg, 0.0f, 0.0f));
+		CockpitCamera->SetFieldOfView(VehicleConfig.Camera.CockpitFov);
+	}
+	// Apply the configured spawn/current view after camera setup.
+	// SetCameraConfig re-applies the same block, so the view mode is
+	// re-derived from DefaultView.
+	SetViewMode(VehicleConfig.Camera.DefaultView);
 }
 
 void ARaceVehicle::SettleToGround()
@@ -89,6 +120,12 @@ void ARaceVehicle::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	PlayerInputComponent->BindAxis(TEXT("RaceThrottle"), this, &ARaceVehicle::OnThrottleAxis);
 	PlayerInputComponent->BindAxis(TEXT("RaceSteer"), this, &ARaceVehicle::OnSteerAxis);
 	PlayerInputComponent->BindAction(TEXT("RaceReset"), IE_Pressed, this, &ARaceVehicle::ResetVehicle);
+	PlayerInputComponent->BindAction(TEXT("RaceView"), IE_Pressed, this, &ARaceVehicle::OnCycleView);
+}
+
+void ARaceVehicle::OnCycleView()
+{
+	CycleView();
 }
 
 void ARaceVehicle::OnThrottleAxis(float Value)
@@ -127,6 +164,24 @@ void ARaceVehicle::ApplySteering(float Value)
 {
 	PendingCommand.Steering = FMath::Clamp(Value, -1.0f, 1.0f);
 	VehicleMovement->SetDriveCommand(PendingCommand);
+}
+
+void ARaceVehicle::SetViewMode(ERaceViewMode Mode)
+{
+	ViewMode = Mode;
+	if (ChaseCamera)
+	{
+		ChaseCamera->SetActive(Mode == ERaceViewMode::Chase);
+	}
+	if (CockpitCamera)
+	{
+		CockpitCamera->SetActive(Mode == ERaceViewMode::Cockpit);
+	}
+}
+
+void ARaceVehicle::CycleView()
+{
+	SetViewMode(GetViewMode() == ERaceViewMode::Chase ? ERaceViewMode::Cockpit : ERaceViewMode::Chase);
 }
 
 void ARaceVehicle::ResetVehicle()
