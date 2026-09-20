@@ -15,7 +15,7 @@ Player can read: countdown seconds, current lap / total laps, live
 position / field, the single-line finish result, and a cleared HUD
 after the mid-program vehicle reset. All presentation data derives
 from `ARaceManager` (sole race-state authority) through a plain data
-layer — `URaceHudModel` transforms and reads only, refreshed at 20 Hz
+layer - `URaceHudModel` transforms and reads only, refreshed at 20 Hz
 from the widget; the widget itself is a thin UMG shell.
 
 ## Architecture
@@ -32,14 +32,14 @@ ARaceHudTestGameMode (?game= override, circuit map only)
 ```
 
 New module dependency: `UMG` (with `SlateCore` transitively) in
-`RacingGame.Build.cs`. No new input bindings — the reset test uses the
+`RacingGame.Build.cs`. No new input bindings - the reset test uses the
 existing `OnVehicleReset` consumed before re-entering the countdown.
 
 ## Manager addition (game code, additive)
 
 `ARaceManager::GetCountdownRemaining()` returns
 `countdown duration - elapsed phase time` while in the Countdown phase
-(0 otherwise). Phase-derived only — no second countdown timer; the HUD
+(0 otherwise). Phase-derived only - no second countdown timer; the HUD
 sampler `Refresh()`/`GetCountdownSeconds()` reads this and `GetPhase()`.
 
 ## E2E program
@@ -60,7 +60,7 @@ six finish 3 laps, gates recorded.
 - `hud_position_display`: during Racing, model position == manager
   `GetPosition(player)` (live), field == 6, text `{pos}/{field}`.
 - `hud_finish_display`: after all finished, model `HasFinish()`, text
-  `Finished {pos} of {field}` — run log `'Finished 6 of 6'`, position
+  `Finished {pos} of {field}` - run log `'Finished 6 of 6'`, position
   6/6 matches the live manager value for participant 0 at completion.
 - `hud_clears_on_reset`: after `OnVehicleReset` + model refresh, lap 0,
   countdown 0/empty, no finish, finish text empty.
@@ -103,7 +103,7 @@ unverified. Finish text shows the participant-0 (player) result only.
 
 ## Development notes (failing runs before passing)
 
-- Run 1: `hud_lap_display`/`hud_finish_display` false at timeout —
+- Run 1: `hud_lap_display`/`hud_finish_display` false at timeout -
   player was AI-driven at pace 1.15 (unproven tier; field max 1.05),
   over-drove into an off-track recovery loop and never completed a lap,
   so player-0 laps stayed 0. Switched the player to the proven Task 15
