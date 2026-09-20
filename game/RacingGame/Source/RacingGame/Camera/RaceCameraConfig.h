@@ -7,10 +7,22 @@
 #include "CoreMinimal.h"
 #include "RaceCameraConfig.generated.h"
 
+// Which camera is the active view on spawn (Task 18).
+UENUM(BlueprintType)
+enum class ERaceViewMode : uint8
+{
+	Chase    UMETA(DisplayName = "Chase"),
+	Cockpit  UMETA(DisplayName = "Cockpit"),
+};
+
 USTRUCT(BlueprintType)
 struct FRaceCameraConfig
 {
 	GENERATED_BODY()
+
+	// Spawn view. Defaults to Chase so Task 10 behavior is unchanged.
+	UPROPERTY(EditAnywhere, Category = "Race|Camera")
+	ERaceViewMode DefaultView = ERaceViewMode::Chase;
 
 	// Spring-arm length in cm at standstill.
 	UPROPERTY(EditAnywhere, Category = "Race|Camera")
@@ -47,4 +59,15 @@ struct FRaceCameraConfig
 	// Teleport detection: larger pawn jumps snap instead of smoothing.
 	UPROPERTY(EditAnywhere, Category = "Race|Camera")
 	float TeleportSnapDist = 200.0f;
+
+	// Cockpit view (Task 18). Rigid: fixed offset, no spring arm, no
+	// smoothing, no look-ahead, no roll or head motion.
+	UPROPERTY(EditAnywhere, Category = "Race|Camera")
+	FVector CockpitOffset = FVector(0.0f, 0.0f, 60.0f);
+
+	UPROPERTY(EditAnywhere, Category = "Race|Camera")
+	float CockpitPitchDeg = 0.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Race|Camera")
+	float CockpitFov = 90.0f;
 };

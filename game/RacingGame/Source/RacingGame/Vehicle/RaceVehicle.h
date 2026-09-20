@@ -74,6 +74,24 @@ public:
 	UCameraComponent* GetChaseCamera() const { return ChaseCamera; }
 	URaceChaseCamera* GetChaseCameraDriver() const { return ChaseCamDriver; }
 
+	// Cockpit view + selection (Task 18). SetViewMode switches the
+	// active camera component immediately (no blend). Reset preserves
+	// the selected view.
+	UCameraComponent* GetCockpitCamera() const { return CockpitCamera; }
+	ERaceViewMode GetViewMode() const { return ViewMode; }
+	void SetViewMode(ERaceViewMode Mode);
+	void CycleView();
+	// Re-apply the whole camera block (arm, chase driver, cockpit pose,
+	// FOV, spawn view) from a config. Harness-facing data-driven knob;
+	// game play calls it with VehicleConfig.Camera.
+	void SetCameraConfig(const FRaceCameraConfig& Config);
+
+protected:
+	// Applies VehicleConfig.Camera to both cameras and re-derives the
+	// active view from DefaultView. Shared by BeginPlay and
+	// SetCameraConfig.
+	void ApplyCameraBlock();
+
 protected:
 	// Single authoritative tunable set, edited per instance or subclass.
 	// The movement component receives it through ApplyConfig and owns none.
@@ -88,6 +106,7 @@ private:
 	// Legacy axis callbacks (see DefaultInput.ini RaceThrottle/RaceSteer).
 	void OnThrottleAxis(float Value);
 	void OnSteerAxis(float Value);
+	void OnCycleView();
 
 	// Places the box bottom exactly on the ground below spawn and is the
 	// basis for the reset transform. Deterministic on the flat test track.
@@ -105,6 +124,10 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Race")
 	UCameraComponent* ChaseCamera;
 
+	// Rigid cockpit view (Task 18): attached to the root, no spring arm.
+	UPROPERTY(VisibleAnywhere, Category = "Race")
+	UCameraComponent* CockpitCamera;
+
 	UPROPERTY(VisibleAnywhere, Category = "Race")
 	URaceVehicleMovement* VehicleMovement;
 
@@ -117,6 +140,8 @@ private:
 	// Assembled normalized command. Keyboard callbacks and the harness
 	// both write here; the movement consumes the whole struct.
 	FRaceDriveCommand PendingCommand;
+
+	ERaceViewMode ViewMode = ERaceViewMode::Chase;
 
 	FTransform InitialTransform;
 };
