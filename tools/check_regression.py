@@ -1,11 +1,12 @@
 """Local regression check for traction (runs on the Mac, not in CI).
-Reads the fourteen headless E2E artifacts produced by the eleven local
+Reads the fifteen headless E2E artifacts produced by the twelve local
 runs (flat map, circuit map, race-state map, AI map, camera map,
 position map, field map, pace map, field6 map, results map, full-race
-map) and fails unless every flag is true: 30 frozen regression flags
-plus 10 Task 8 gates plus 6 Task 9 gates plus 6 Task 10 gates plus
-6 Task 11 gates plus 6 Task 12 gates plus 6 Task 13 gates plus 6 Task
-14 gates plus 6 Task 15 gates plus 6 Task 16 gates.
+map, HUD-race map) and fails unless every flag is true: 30 frozen
+regression flags plus 10 Task 8 gates plus 6 Task 9 gates plus 6 Task
+10 gates plus 6 Task 11 gates plus 6 Task 12 gates plus 6 Task 13
+gates plus 6 Task 14 gates plus 6 Task 15 gates plus 6 Task 16 gates
+plus 6 Task 17 gates.
 Usage from the repo root: python3 tools/check_regression.py
 """
 import json
@@ -42,6 +43,9 @@ T15_KEYS = ['results_empty', 'results_populated', 'times_consistent',
             'reset_clears', 'results_immutable', 'no_deadlock']
 T16_KEYS = ['configured_laps', 'all_finished', 'results_populated',
             'order_total', 'reset_clears', 'no_deadlock']
+T17_KEYS = ['hud_bound', 'hud_countdown_shown', 'hud_lap_display',
+            'hud_position_display', 'hud_finish_display',
+            'hud_clears_on_reset']
 
 
 def load(name):
@@ -63,15 +67,17 @@ def main():
     t14 = load('Task14E2E')
     t15 = load('Task15E2E')
     t16 = load('Task16E2E')
+    t17 = load('Task17E2E')
     flags = ([t2[k] for k in T2_KEYS] + [t2[k] for k in T3_KEYS]
              + [t5[k] for k in T5_KEYS] + [t6[k] for k in T6_KEYS]
              + [t7[k] for k in T7_KEYS] + [t8[k] for k in T8_KEYS]
              + [t9[k] for k in T9_KEYS] + [t10[k] for k in T10_KEYS]
              + [t11[k] for k in T11_KEYS] + [t12[k] for k in T12_KEYS]
              + [t13[k] for k in T13_KEYS] + [t14[k] for k in T14_KEYS]
-             + [t15[k] for k in T15_KEYS] + [t16[k] for k in T16_KEYS])
+             + [t15[k] for k in T15_KEYS] + [t16[k] for k in T16_KEYS]
+             + [t17[k] for k in T17_KEYS])
     print('%d flags: %s' % (len(flags), flags))
-    ok = len(flags) == 88 and all(flags) and t2['reached_end']
+    ok = len(flags) == 94 and all(flags) and t2['reached_end']
     print('PASS' if ok else 'FAIL')
     return 0 if ok else 1
 

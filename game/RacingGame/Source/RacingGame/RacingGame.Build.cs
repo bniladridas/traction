@@ -12,7 +12,8 @@ public class RacingGame : ModuleRules
 			"Core",
 			"CoreUObject",
 			"Engine",
-			"InputCore"
+			"InputCore",
+			"UMG"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

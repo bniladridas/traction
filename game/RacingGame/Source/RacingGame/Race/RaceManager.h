@@ -116,6 +116,11 @@ public:
 	// Legacy single-participant view (participant 0). Unchanged Task 8
 	// behavior.
 	ERacePhase GetPhase() const { return Phase; }
+
+	// Seconds left in Countdown, 0 outside it. Read-only transform of the
+	// single authority (Phase + PhaseTime) for presentation layers; the
+	// HUD never runs its own countdown timer.
+	float GetCountdownRemaining() const;
 	int32 GetCompletedLaps() const;
 	int32 GetNextCheckpoint() const;
 	bool IsCurrentLapValid() const;
