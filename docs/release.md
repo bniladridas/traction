@@ -5,10 +5,12 @@ line in brackets.
 
 Physics: accel/brake/corner/reset/collision checklist. [Verified
 headlessly through Task 7.]
-Race: checkpoints, lap count, finish [verified: 2 laps, 1 AI rival],
-  positions with 6 cars [target only, not verified].
+Race: checkpoints, lap count, finish [verified: full 3-lap race,
+  six-car field with 5 AI], positions with 6 cars [verified through
+  Task 14], recorded results [verified through Task 15].
 AI: follows line, brakes for corners, recovers [verified for one
-  rival], no deadlock [target only at field scale].
+  rival], no deadlock [verified at 6-car field scale and full 3-lap
+  race].
 Perf: empty track vs full race vs worst-case shadows, all >= target on
   presets. [Not measured; nullrhi timing only.]
 

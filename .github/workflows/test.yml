@@ -2,7 +2,7 @@
 # Policy: no self-hosted runner. GitHub-hosted CI validates what is
 # checkable without Unreal (file presence, frozen threshold namespaces,
 # tooling syntax, no stale runner references). Measured results
-# (results.json, 40 flags) are produced and checked on the local Apple
+# (results.json, 88 flags) are produced and checked on the local Apple
 # Silicon Mac; see docs/testing.md for the local procedure. Saved/
 # artifacts are gitignored, so GitHub never sees measured values, only
 # the frozen contract definitions.

@@ -27,10 +27,9 @@ Target: 1080p60 on Apple Silicon. Freeze features at RC.
 
 ## Future
 
-- M4 continued: Stage 1-4 AI racecraft, position scale beyond 6 cars
-  (race manager, one rival, 3-car and 6-car fields, live positions, and
-  recorded results already verified).
-  Gate: full 3-lap race vs 5 AI, correct results.
+- M4 continued: Stage 1-4 AI racecraft, position scale beyond 6 cars.
+  Complete-race gate met (Task 16): full 3-lap race vs 5 AI with
+  correct results.
 - M5 Graphics: final car, PBR, environment, lighting, effects.
 - M6 Audio+UI: RPM engine audio, tire skid, HUD/menus/settings.
 - M7 Optimization: Metal profiling, Low-Ultra presets.
@@ -38,4 +37,6 @@ Target: 1080p60 on Apple Silicon. Freeze features at RC.
 - M9 Release: RC1-RC3, macOS packaging, v1.0.0.
 
 Success criteria per phase in `docs/release.md`. Rendered verification
-throughout is blocked on the Xcode Metal Toolchain component.
+uses the installed Xcode Metal Toolchain; capture path verified.
+Human feel, performance, and visual quality remain unverified
+(standing limitations).
