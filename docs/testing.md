@@ -4,8 +4,8 @@ Three verification categories, never mixed:
 
 1. **Functional**: does the behavior happen? Headless standalone runs with
    scripted input through the real gameplay path, transform logs, and
-   `results.json` with predefined thresholds. Current suite: 88 flags
-   across fourteen artifacts (see the frozen layers below).
+   `results.json` with predefined thresholds. Current suite: 94 flags
+   across sixteen artifacts (see the frozen layers below).
 
 ## Regression layers (frozen, cumulative)
 
@@ -41,6 +41,8 @@ tasks add layers; none edit earlier ones.
   reset clearing, immutability, no deadlock on the results map.
 - Task 16 (`Saved/Task16E2E/`): configured laps, all finished, results
   populated, order total, reset clears, no deadlock on the full-race map.
+- Task 17 (`Saved/Task17E2E/`): hud bound, countdown shown, lap display,
+  position display, finish display, clears on reset on the hud-race map.
 
 CI (`test.yml`) validates repository invariants on GitHub-hosted runners:
 verification docs, frozen threshold namespaces, headers, tooling syntax,
@@ -68,13 +70,14 @@ GenerateProjectFiles.sh -project="game/RacingGame/RacingGame.uproject" -game -en
 Build.sh TP_VehicleAdvEditor Mac Development -project="game/RacingGame/RacingGame.uproject"
 ```
 
-Run all eleven E2E programs (flat map, circuit map, race-state map, AI
+Run all twelve E2E programs (flat map, circuit map, race-state map, AI
 map, camera map, position map, field map, pace map, field6 map, results
-map, full-race map),
-then require every flag true across all fourteen artifacts (30 frozen
+map, full-race map, hud-race map),
+then require every flag true across all sixteen artifacts (30 frozen
 regression flags plus 10 Task 8 gates plus 6 Task 9 gates plus 6 Task
 10 gates plus 6 Task 11 gates plus 6 Task 12 gates plus 6 Task 13
-gates plus 6 Task 14 gates plus 6 Task 15 gates plus 6 Task 16 gates):
+gates plus 6 Task 14 gates plus 6 Task 15 gates plus 6 Task 16 gates
+plus 6 Task 17 gates):
 
 ```text
 python3 tools/check_regression.py

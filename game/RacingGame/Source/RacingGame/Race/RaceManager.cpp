@@ -170,6 +170,15 @@ void ARaceManager::StartRace()
 	}
 }
 
+float ARaceManager::GetCountdownRemaining() const
+{
+	if (Phase != ERacePhase::Countdown)
+	{
+		return 0.0f;
+	}
+	return FMath::Max(RaceConfig.CountdownDuration - PhaseTime, 0.0f);
+}
+
 void ARaceManager::OnVehicleReset()
 {
 	Phase = ERacePhase::Ready;

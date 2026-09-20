@@ -1,6 +1,6 @@
 # Architecture: traction vehicle and track systems
 
-Status: Task 16 state. This document describes the RacingGame-owned
+Status: Task 17 state. This document describes the RacingGame-owned
 architecture as it exists; the template vehicle code is a separate,
 untouched neighbor (project defaults reference it; automated runs
 override via `?game=`), not a dependency.
@@ -23,7 +23,10 @@ game/RacingGame/Source/
 │   │   └── RaceTrackConfig.*      # FRaceTrackConfig: single track data set
 │   ├── Race/
 │   │   ├── RaceManager.*          # phases, per-participant progression, laps
-│   │   └── RaceConfig.*           # FRaceConfig: lap count, countdown
+│   │   ├── RaceConfig.*           # FRaceConfig: lap count, countdown
+│   │   ├── RaceHudConfig.*        # FRaceHudConfig: formats + poll rate
+│   │   ├── RaceHudModel.*         # presentation-data layer (reads manager only)
+│   │   └── RaceHudWidget.*        # UMG shell (polls model at UpdateRateHz)
 │   ├── AI/
 │   │   └── RaceAIDriver.*         # pursuit driver + recovery (Apply* only)
 │   └── Test/
@@ -32,11 +35,13 @@ game/RacingGame/Source/
 │       ├── RaceStateTestGameMode.*    # race-state harness GameMode
 │       ├── RaceAITestGameMode.*       # AI harness GameMode
 │       ├── RaceCameraTestGameMode.*   # camera harness GameMode
+│       ├── RaceHudTestGameMode.*      # HUD harness GameMode
 │       ├── Task2Probe.*              # Tasks 2/3/5/6 metrics (frozen schemas)
 │       ├── Task7Probe.*              # Task 7 validation + lap driver
 │       ├── Task8Probe.*              # Task 8 teleport state program
 │       ├── Task9Probe.*              # Task 9 AI participation program
-│       └── Task10Probe.*             # Task 10 camera measurement program
+│       ├── Task10Probe.*             # Task 10 camera measurement program
+│       └── Task17Probe.*             # Task 17 HUD read-out program
 └── TP_VehicleAdv/         # Epic template code and content (retained, see above)
 ```
 
@@ -128,7 +133,8 @@ and final times), cleared on reset. Progression: 2-participant order,
   and lap program, the Task 8 teleport state program, the Task 9 AI
   program, the Task 10 camera program, the Task 11 position program,
   the Task 12/14 field programs, the Task 13 pace program, and the
-  Task 15 results program, and the Task 16 full-race program, each selected by its own
+  Task 15 results program, the Task 16 full-race program, and the
+  Task 17 HUD program, each selected by its own
   `?game=` GameMode.
 - Both maps created by `Content/Python/*_create_map.py`, kept
   regenerable. Test GameModes are selected with `?game=` so project
