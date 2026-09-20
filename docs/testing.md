@@ -4,8 +4,8 @@ Three verification categories, never mixed:
 
 1. **Functional**: does the behavior happen? Headless standalone runs with
    scripted input through the real gameplay path, transform logs, and
-   `results.json` with predefined thresholds. Current suite: 94 flags
-   across sixteen artifacts (see the frozen layers below).
+   `results.json` with predefined thresholds. Current suite: 100 flags
+   across seventeen artifacts (see the frozen layers below).
 
 ## Regression layers (frozen, cumulative)
 
