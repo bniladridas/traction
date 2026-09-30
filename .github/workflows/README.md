@@ -29,6 +29,9 @@ part checkable automatically is checked consistently.
 - `lint.yml`: Markdown, whitespace, and JSON hygiene on ubuntu.
 - `test.yml`: contract checks on ubuntu (docs, threshold namespaces,
   headers, tooling, no pending-runner references).
+- `label-docs.yml`: one deterministic labeling rule on ubuntu (docs-only
+  PRs get the `documentation` label; all other labeling stays manual).
+  Outside the CI contract: it never gates merges or removes labels.
 - `site.yml`: static site validation and Pages deployment.
 
 Unreal build and headless E2E run on the Mac per `docs/testing.md`;
