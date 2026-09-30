@@ -1,6 +1,6 @@
 # Architecture: traction vehicle and track systems
 
-Status: Task 18 state. This document describes the RacingGame-owned
+Status: Task 19 state. This document describes the RacingGame-owned
 architecture as it exists; the template vehicle code is a separate,
 untouched neighbor (project defaults reference it; automated runs
 override via `?game=`), not a dependency.
@@ -28,7 +28,7 @@ game/RacingGame/Source/
 │   │   ├── RaceHudModel.*         # presentation-data layer (reads manager only)
 │   │   └── RaceHudWidget.*        # UMG shell (polls model at UpdateRateHz)
 │   ├── AI/
-│   │   └── RaceAIDriver.*         # pursuit driver + recovery (Apply* only)
+│   │   └── RaceAIDriver.*         # pursuit driver + recovery + opt-in line-commit racecraft (Apply* only)
 │   └── Test/
 │       ├── RaceTestGameMode.*         # flat-map harness GameMode (URL-selected)
 │       ├── RaceTrackTestGameMode.*    # circuit harness GameMode (URL-selected)
@@ -37,13 +37,15 @@ game/RacingGame/Source/
 │       ├── RaceCameraTestGameMode.*   # camera harness GameMode
 │       ├── RaceHudTestGameMode.*      # HUD harness GameMode
 │       ├── RaceCockpitTestGameMode.*  # cockpit camera harness GameMode
+│       ├── Task19RacecraftGameMode.*  # racecraft harness GameMode
 │       ├── Task2Probe.*              # Tasks 2/3/5/6 metrics (frozen schemas)
 │       ├── Task7Probe.*              # Task 7 validation + lap driver
 │       ├── Task8Probe.*              # Task 8 teleport state program
 │       ├── Task9Probe.*              # Task 9 AI participation program
 │       ├── Task10Probe.*             # Task 10 camera measurement program
 │       ├── Task17Probe.*             # Task 17 HUD read-out program
-│       └── Task18Probe.*             # Task 18 cockpit view program
+│       ├── Task18Probe.*             # Task 18 cockpit view program
+│       └── Task19Probe.*             # Task 19 racecraft program
 └── TP_VehicleAdv/         # Epic template code and content (retained, see above)
 ```
 
@@ -126,6 +128,18 @@ BeginPlay; `SetCameraConfig` re-applies the whole camera block from a
 config for data-driven tuning. The `RaceView` action (default C) maps
 to `OnCycleView` -> `CycleView`. Task 10 chase logic is untouched.
 
+## Line-commit racecraft (Task 19)
+
+`URaceAIDriver` carries an opt-in racecraft layer (default off) that
+publishes a separate commanded line offset: inside the attack window
+(absolute unwrapped separation at or below 600 cm) the attacker
+commands its frozen line plus 120 cm toward the free side; outside the
+window, or after the pass, it cedes to the frozen line. The frozen
+`LineOffset` is never mutated; the layer reads manager participants
+and rival absolute distances only and writes no race state.
+`GetUnwrappedDistance` exposes the absolute unwrapped centerline
+distance; `GetProgressDistance` keeps its Task 9 meaning.
+
 ## Positions, field, and results (Tasks 11-15)
 
 `ARaceManager::GetPosition` derives live standings from finished flags,
@@ -147,7 +161,8 @@ and final times), cleared on reset. Progression: 2-participant order,
   program, the Task 10 camera program, the Task 11 position program,
   the Task 12/14 field programs, the Task 13 pace program, and the
   Task 15 results program, the Task 16 full-race program, the
-  Task 17 HUD program, and the Task 18 cockpit program, each selected
+  Task 17 HUD program, the Task 18 cockpit program, and the Task 19
+  racecraft program, each selected
   by its own `?game=` GameMode.
 - Both maps created by `Content/Python/*_create_map.py`, kept
   regenerable. Test GameModes are selected with `?game=` so project

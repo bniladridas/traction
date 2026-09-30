@@ -4,8 +4,8 @@ Three verification categories, never mixed:
 
 1. **Functional**: does the behavior happen? Headless standalone runs with
    scripted input through the real gameplay path, transform logs, and
-   `results.json` with predefined thresholds. Current suite: 100 flags
-   across seventeen artifacts (see the frozen layers below).
+   `results.json` with predefined thresholds. Current suite: 106 flags
+   across sixteen artifacts (see the frozen layers below).
 
 ## Regression layers (frozen, cumulative)
 
@@ -46,6 +46,9 @@ tasks add layers; none edit earlier ones.
 - Task 18 (`Saved/Task18E2E/`): view configured, view toggle, cockpit
   rigid, pitch and FOV applied, reset preserves view, race compatible
   on the cockpit map.
+- Task 19 (`Saved/Task19E2E/`): racecraft configured, attack window
+  detected, commit to the free side, no commit outside the window, cede
+  back, scope frozen on the circuit map.
 
 CI (`test.yml`) validates repository invariants on GitHub-hosted runners:
 verification docs, frozen threshold namespaces, headers, tooling syntax,
@@ -73,14 +76,15 @@ GenerateProjectFiles.sh -project="game/RacingGame/RacingGame.uproject" -game -en
 Build.sh TP_VehicleAdvEditor Mac Development -project="game/RacingGame/RacingGame.uproject"
 ```
 
-Run all thirteen E2E programs (flat map, circuit map, race-state map, AI
+Run all fourteen E2E programs (flat map, circuit map, race-state map, AI
 map, camera map, position map, field map, pace map, field6 map, results
-map, full-race map, hud-race map, cockpit map),
-then require every flag true across all seventeen artifacts (30 frozen
+map, full-race map, hud-race map, cockpit map, racecraft program on the
+circuit map),
+then require every flag true across all sixteen artifacts (30 frozen
 regression flags plus 10 Task 8 gates plus 6 Task 9 gates plus 6 Task
 10 gates plus 6 Task 11 gates plus 6 Task 12 gates plus 6 Task 13
 gates plus 6 Task 14 gates plus 6 Task 15 gates plus 6 Task 16 gates
-plus 6 Task 17 gates plus 6 Task 18 gates):
+plus 6 Task 17 gates plus 6 Task 18 gates plus 6 Task 19 gates):
 
 ```text
 python3 tools/check_regression.py

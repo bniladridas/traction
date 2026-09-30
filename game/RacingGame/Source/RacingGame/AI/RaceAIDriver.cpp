@@ -24,6 +24,10 @@ void URaceAIDriver::BeginPlay()
 	{
 		Manager = *It;
 	}
+	// Task 19: freeze the staged line as the baseline the commanded
+	// offset always cedes back to. LineOffset itself is never mutated.
+	FrozenLineOffset = LineOffset;
+	CommandedLineOffset = FrozenLineOffset;
 }
 
 int32 URaceAIDriver::NearestIndex(const FVector& Pos) const
@@ -104,6 +108,10 @@ void URaceAIDriver::TickComponent(float DeltaTime, enum ELevelTick TickType, FAc
 		return;
 	}
 	bDrove = true;
+
+	// Task 19 racecraft: resolve the commanded line from a read-only
+	// rival scan. Off by default, so Tasks 1-18 flows are unaffected.
+	UpdateRacecraft(DeltaTime);
 
 	if (Clock - LastBeat > 2.0)
 	{
@@ -189,7 +197,7 @@ void URaceAIDriver::TickComponent(float DeltaTime, enum ELevelTick TickType, FAc
 	// Pure pursuit with curvature-aware speed (Task 7 program, game-side).
 	const float Speed = Vehicle->GetForwardSpeed();
 	FRaceTrackCenterPoint Tgt = Track->SampleAtDistance(UnwrappedS + LookaheadBase + FMath::Abs(Speed) * LookaheadSpeedGain);
-	Tgt.Position += FVector(-Tgt.Forward.Y, Tgt.Forward.X, 0.0f) * LineOffset;
+	Tgt.Position += FVector(-Tgt.Forward.Y, Tgt.Forward.X, 0.0f) * CommandedLineOffset;
 	const FVector ToTgt = Tgt.Position - Vehicle->GetActorLocation();
 	const float DesiredYaw = FMath::RadiansToDegrees(FMath::Atan2(ToTgt.Y, ToTgt.X));
 	const float YawErr = FRotator::NormalizeAxis(DesiredYaw - Vehicle->GetActorRotation().Yaw);
@@ -223,4 +231,66 @@ void URaceAIDriver::TickComponent(float DeltaTime, enum ELevelTick TickType, FAc
 		Vehicle->ApplyThrottle(0.4f);
 		Vehicle->ApplyBrake(0.0f);
 	}
+}
+
+// Task 19 racecraft: line-commit overtake decision, first slice.
+//
+// Reads only public seams: ARaceManager's participant list and each rival
+// driver's absolute unwrapped distance. Writes no race, manager, lap, or
+// order state, and never mutates the frozen LineOffset. When disabled (the
+// default) the commanded offset is the frozen offset, so every pre-Task-19
+// flow is bit-identical.
+void URaceAIDriver::ResetRacecraft()
+{
+	FrozenLineOffset = LineOffset;
+	CommandedLineOffset = FrozenLineOffset;
+	RivalGapCm = -1.0f;
+	bRacecraftCommitted = false;
+}
+
+void URaceAIDriver::UpdateRacecraft(float DeltaTime)
+{
+	if (!bRacecraftEnabled || !Manager || !Vehicle)
+	{
+		CommandedLineOffset = FrozenLineOffset;
+		RivalGapCm = -1.0f;
+		bRacecraftCommitted = false;
+		return;
+	}
+
+	// Read-only rival scan: nearest driver strictly ahead of us by absolute
+	// unwrapped track distance. Position/order are read from the manager,
+	// never written.
+	const float MyDistance = GetUnwrappedDistance();
+	float BestGap = -1.0f;
+	const int32 Count = Manager->GetParticipantCount();
+	for (int32 i = 0; i < Count; ++i)
+	{
+		ARaceVehicle* Other = Manager->GetParticipantVehicle(i);
+		if (!Other || Other == Vehicle)
+		{
+			continue;
+		}
+		TArray<UActorComponent*> Comps;
+		Other->GetComponents(URaceAIDriver::StaticClass(), Comps);
+		for (UActorComponent* C : Comps)
+		{
+			if (const URaceAIDriver* Rival = Cast<URaceAIDriver>(C))
+			{
+				const float Gap = Rival->GetUnwrappedDistance() - MyDistance;
+				if (Gap > 0.0f && (BestGap < 0.0f || Gap < BestGap))
+				{
+					BestGap = Gap;
+				}
+			}
+		}
+	}
+
+	RivalGapCm = BestGap;
+	// Commit while a rival is inside the frozen attack window; cede the
+	// moment the window clears (no rival ahead, or gap beyond it).
+	bRacecraftCommitted = BestGap >= 0.0f && BestGap <= RacecraftAttackWindowCm;
+	CommandedLineOffset = bRacecraftCommitted
+		? FrozenLineOffset + RacecraftFreeSideSign * RacecraftCommitShiftCm
+		: FrozenLineOffset;
 }

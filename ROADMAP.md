@@ -24,8 +24,9 @@ Target: 1080p60 on Apple Silicon. Freeze features at RC.
   (Task 13); six-car field verified (Task 14); race results verified
   (Task 15); full 3-lap race verified (Task 16); player-facing race HUD
   verified (Task 17); cockpit camera and view selection verified
-  (Task 18). Next: Task 19. No menus, settings, pause, persistence, or
-  multiplayer yet.
+  (Task 18); line-commit AI racecraft verified (Task 19). Next:
+  further M4 racecraft stages. No menus, settings, pause, persistence,
+  or multiplayer yet.
 
 ## Future
 
@@ -33,6 +34,8 @@ Target: 1080p60 on Apple Silicon. Freeze features at RC.
   Presentation gate met (Task 17): race state player-readable through
   the 20 Hz HUD model (countdown, lap, position, result). Camera gate
   met (Task 18): chase plus rigid cockpit, deterministic view switching.
+  Racecraft gate met (Task 19): line-commit overtake, commit to the free
+  side, cede back, exercised no-commit negative case.
 - M6 Audio+UI: RPM engine audio, tire skid, menus/settings. The HUD
   layer lands here as presentation polish (Task 17 set the data path).
 - M7 Optimization: Metal profiling, Low-Ultra presets.
