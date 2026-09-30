@@ -60,8 +60,47 @@ public:
 	float StallWindow = 5.0f;
 
 	float GetProgressDistance() const { return UnwrappedS - UnwrappedStart; }
+	// Absolute unwrapped centerline distance in cm. Unlike progress, this is
+	// not normalized by spawn position and is therefore suitable for staged
+	// absolute separation. Read-only.
+	float GetUnwrappedDistance() const { return UnwrappedS; }
 	int32 GetRecoveryCount() const { return RecoveryCount; }
 	bool IsDriving() const { return bDrove; }
+
+	// ---- Task 19 racecraft seam (line-commit overtake, first slice) ----
+	// Additive and opt-in. The frozen LineOffset above is NEVER mutated:
+	// this layer publishes a separate commanded offset that the pursuit
+	// uses when resolving its target. Reads only public seams (ARaceManager
+	// participants and each rival driver's absolute unwrapped distance) and
+	// writes no race, manager, lap, or order state. Defender behavior,
+	// right-of-way, and pace press are out of scope for Task 19.
+	UPROPERTY(EditAnywhere, Category = "Race|AI|Racecraft")
+	bool bRacecraftEnabled = false;
+	// Longitudinal window (cm) inside which a rival ahead provokes a
+	// commit. Frozen at contract time.
+	UPROPERTY(EditAnywhere, Category = "Race|AI|Racecraft")
+	float RacecraftAttackWindowCm = 600.0f;
+	// Lateral shift (cm) committed toward the free side when committed.
+	UPROPERTY(EditAnywhere, Category = "Race|AI|Racecraft")
+	float RacecraftCommitShiftCm = 120.0f;
+	// Free side: +1 commits toward positive lateral (right), -1 toward
+	// negative (left). Staged, not inferred from other cars.
+	UPROPERTY(EditAnywhere, Category = "Race|AI|Racecraft")
+	float RacecraftFreeSideSign = 1.0f;
+
+	// LineOffset captured at BeginPlay; the frozen baseline the commanded
+	// offset always returns to.
+	float GetFrozenLineOffset() const { return FrozenLineOffset; }
+	// The commanded offset this layer currently publishes. Equals
+	// FrozenLineOffset when not committed.
+	float GetCommandedLineOffset() const { return CommandedLineOffset; }
+	bool IsRacecraftCommitted() const { return bRacecraftCommitted; }
+	// Absolute separation to the nearest rival ahead, cm; negative when none
+	// is ahead.
+	float GetRacecraftRivalGapCm() const { return RivalGapCm; }
+
+	// Re-arms the committed offset back to the frozen line.
+	void ResetRacecraft();
 
 	// Re-anchors tracking to the current position after an external
 	// teleport (test staging, reset). Without this, the stall detector
@@ -91,4 +130,13 @@ private:
 	float CheckTime = 0.0f;
 	float CheckS = 0.0f;
 	float Clock = 0.0f;
+
+	// Task 19 racecraft seam state (additive).
+	float FrozenLineOffset = 0.0f;
+	float CommandedLineOffset = 0.0f;
+	float RivalGapCm = -1.0f;
+	bool bRacecraftCommitted = false;
+
+	// Resolves the commanded offset from a read-only rival scan.
+	void UpdateRacecraft(float DeltaTime);
 };

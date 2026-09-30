@@ -30,12 +30,13 @@ direction the architecture supports, not a feature list.
 
 ## Current state
 
-Prototype renders from the real Metal renderer (Task 18 state).
+Prototype renders from the real Metal renderer (Task 19 state).
 Untextured, no art pass; shown for discussion of actual state, not as
 quality, performance, or gameplay claims. Race state is player-readable
 through the HUD data path (countdown, lap, position, result); visual
 HUD output is not yet drawn. Chase and rigid cockpit views switch
-deterministically (C key).
+deterministically (C key). The faster AI commits to the free side
+inside the attack window and cedes after (line-commit racecraft).
 
 ![Start/finish straight](docs/verification/assets/track-start.png)
 ![Fast sweeper](docs/verification/assets/track-sweeper.png)
@@ -61,7 +62,7 @@ traction/
 ├── ROADMAP.md
 ├── AGENTS.md
 ├── docs/
-│   ├── architecture.md      # current system map (Task 18 state)
+│   ├── architecture.md      # current system map (Task 19 state)
 │   ├── testing.md           # verification philosophy + regression layers
 │   ├── vehicles.md          # V1 car: custom movement, config, drivetrain
 │   ├── track.md             # V1 circuit: config, collision, checkpoints
