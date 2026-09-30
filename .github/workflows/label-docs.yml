@@ -29,7 +29,7 @@ jobs:
             exit 0
           fi
           if printf '%s\n' "$files" | grep -q .; then
-            gh pr edit "$PR" --add-label documentation
+            gh pr edit "$PR" --repo "${{ github.repository }}" --add-label documentation
             echo "documentation label applied"
           else
             echo "no files listed; leaving labels to humans"
