@@ -1,0 +1,36 @@
+# traction docs labeling: one deterministic rule, outside the CI contract.
+# PRs that touch only docs/site/markdown files get the `documentation`
+# label automatically. Every other PR is left for human labeling.
+# This workflow never gates merges and never removes labels.
+name: label-docs
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  label-docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Add documentation label to docs-only PRs
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          files=$(gh api "repos/${{ github.repository }}/pulls/$PR/files" --paginate --jq '.[].filename')
+          echo "$files"
+          if printf '%s\n' "$files" | grep -qvE '(\.md$|^docs/|^site/)'; then
+            echo "engineering changes present; leaving labels to humans"
+            exit 0
+          fi
+          if printf '%s\n' "$files" | grep -q .; then
+            gh pr edit "$PR" --add-label documentation
+            echo "documentation label applied"
+          else
+            echo "no files listed; leaving labels to humans"
+          fi
