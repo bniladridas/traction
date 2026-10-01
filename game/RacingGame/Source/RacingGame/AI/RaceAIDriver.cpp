@@ -234,12 +234,13 @@ void URaceAIDriver::TickComponent(float DeltaTime, enum ELevelTick TickType, FAc
 }
 
 // Task 19 racecraft: line-commit overtake decision, first slice.
+// Task 20 defense: defend-the-line response, second slice (below).
 //
 // Reads only public seams: ARaceManager's participant list and each rival
 // driver's absolute unwrapped distance. Writes no race, manager, lap, or
-// order state, and never mutates the frozen LineOffset. When disabled (the
-// default) the commanded offset is the frozen offset, so every pre-Task-19
-// flow is bit-identical.
+// order state, and never mutates the frozen LineOffset. When both layers
+// are disabled (the default) the commanded offset is the frozen offset,
+// so every pre-Task-19 flow is bit-identical.
 void URaceAIDriver::ResetRacecraft()
 {
 	FrozenLineOffset = LineOffset;
@@ -250,7 +251,56 @@ void URaceAIDriver::ResetRacecraft()
 
 void URaceAIDriver::UpdateRacecraft(float DeltaTime)
 {
-	if (!bRacecraftEnabled || !Manager || !Vehicle)
+	if (!Manager || !Vehicle)
+	{
+		CommandedLineOffset = FrozenLineOffset;
+		RivalGapCm = -1.0f;
+		bRacecraftCommitted = false;
+		return;
+	}
+
+	// Task 20 defense: nearest driver strictly BEHIND us by absolute
+	// unwrapped track distance. Same read-only seams and the same
+	// commanded-offset channel as the attack role; no cross-car reads or
+	// writes, and the Task 19 path below is untouched.
+	if (bDefenseEnabled)
+	{
+		const float MyDistance = GetUnwrappedDistance();
+		float BestBehind = -1.0f;
+		const int32 Count = Manager->GetParticipantCount();
+		for (int32 i = 0; i < Count; ++i)
+		{
+			ARaceVehicle* Other = Manager->GetParticipantVehicle(i);
+			if (!Other || Other == Vehicle)
+			{
+				continue;
+			}
+			TArray<UActorComponent*> Comps;
+			Other->GetComponents(URaceAIDriver::StaticClass(), Comps);
+			for (UActorComponent* C : Comps)
+			{
+				if (const URaceAIDriver* Rival = Cast<URaceAIDriver>(C))
+				{
+					const float Behind = MyDistance - Rival->GetUnwrappedDistance();
+					if (Behind > 0.0f && (BestBehind < 0.0f || Behind < BestBehind))
+					{
+						BestBehind = Behind;
+					}
+				}
+			}
+		}
+
+		RivalGapCm = BestBehind;
+		// Defend while a rival is inside the frozen rear window; cede the
+		// moment the window clears (no rival behind, or gap beyond it).
+		bRacecraftCommitted = BestBehind >= 0.0f && BestBehind <= DefenseRearWindowCm;
+		CommandedLineOffset = bRacecraftCommitted
+			? FrozenLineOffset + DefenseDirectionSign * DefenseShiftCm
+			: FrozenLineOffset;
+		return;
+	}
+
+	if (!bRacecraftEnabled)
 	{
 		CommandedLineOffset = FrozenLineOffset;
 		RivalGapCm = -1.0f;

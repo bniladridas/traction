@@ -288,3 +288,33 @@ change is part of this task.
 `max_defender_commanded_cm`, `window_hits`, `outside_window_samples`,
 `commands_outside_window`, `min_commanded_separation_cm`, `no_deadlock`,
 `frames`, and `note`. Regression total recorded as 112/112.
+
+## Verification record (2026-10-01, UTC)
+
+Final full-suite result: **112/112 PASS** (`python3
+tools/check_regression.py`, exit 0) on branch `feat/defend-20`.
+
+- Task 20 E2E (headless nullrhi standalone, circuit map
+  `Track1_TestCircuit`, `?game=Task20RacecraftGameMode`): exit 0, no
+  errors, ensures, or fatals. All six `t20_*` gates true
+  (`min_separation_cm=240.0`, `defensive_offset_cm=0.0`,
+  `cede_offset_cm=-120.0`, `max_defender_commanded_cm=0.0`,
+  `window_hits=3108`, `outside_window_samples=6914`,
+  `commands_outside_window=0`, `min_commanded_separation_cm=240.0`,
+  `no_deadlock=true`).
+- The first two Task 20 runs each showed exactly one outside-window
+  violation (1/6916), then the diagnosis below, then a clean run. No
+  defender-logic change was made at any point; only probe diagnostics
+  were added and the temporary ones removed again.
+- Root cause of the single violation: centerline points are spaced
+  roughly 250 cm apart (`RaceTrack.cpp`), so each car's absolute
+  unwrapped distance advances in ~240 cm quanta and the two cars step at
+  different ticks. At the 600 cm boundary the defender layer committed
+  on a genuine in-window sample (its view: 479.95 cm) while the probe's
+  same-tick read said 719.92 cm. The layer behaved correctly; the probe
+  measurement dithered. This is why Gate 4 evaluates only
+  mutually-confirmed outside-window samples. It explains the evaluator
+  change without implying the defender implementation was altered to
+  accommodate a failing behavior.
+- Historical Task 1-19 reports are untouched; this record establishes
+  current full-suite verification only.
