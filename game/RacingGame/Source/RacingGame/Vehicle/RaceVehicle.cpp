@@ -151,19 +151,28 @@ void ARaceVehicle::OnSteerAxis(float Value)
 void ARaceVehicle::ApplyThrottle(float Value)
 {
 	PendingCommand.Throttle = FMath::Clamp(Value, 0.0f, 1.0f);
-	VehicleMovement->SetDriveCommand(PendingCommand);
+	if (VehicleMovement)
+	{
+		VehicleMovement->SetDriveCommand(PendingCommand);
+	}
 }
 
 void ARaceVehicle::ApplyBrake(float Value)
 {
 	PendingCommand.Brake = FMath::Clamp(Value, 0.0f, 1.0f);
-	VehicleMovement->SetDriveCommand(PendingCommand);
+	if (VehicleMovement)
+	{
+		VehicleMovement->SetDriveCommand(PendingCommand);
+	}
 }
 
 void ARaceVehicle::ApplySteering(float Value)
 {
 	PendingCommand.Steering = FMath::Clamp(Value, -1.0f, 1.0f);
-	VehicleMovement->SetDriveCommand(PendingCommand);
+	if (VehicleMovement)
+	{
+		VehicleMovement->SetDriveCommand(PendingCommand);
+	}
 }
 
 void ARaceVehicle::SetViewMode(ERaceViewMode Mode)
@@ -285,7 +294,11 @@ FVector ARaceVehicle::GetWheelContactNormal(int32 Index) const
 
 const FRaceVehicleConfig& ARaceVehicle::GetActiveConfig() const
 {
-	return VehicleMovement->GetActiveConfig();
+	if (VehicleMovement)
+	{
+		return VehicleMovement->GetActiveConfig();
+	}
+	return VehicleConfig;
 }
 
 float ARaceVehicle::GetEngineRPM() const
