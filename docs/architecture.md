@@ -1,6 +1,6 @@
 # Architecture: traction vehicle and track systems
 
-Status: Task 19 state. This document describes the RacingGame-owned
+Status: Task 20 state. This document describes the RacingGame-owned
 architecture as it exists; the template vehicle code is a separate,
 untouched neighbor (project defaults reference it; automated runs
 override via `?game=`), not a dependency.
@@ -28,7 +28,7 @@ game/RacingGame/Source/
 │   │   ├── RaceHudModel.*         # presentation-data layer (reads manager only)
 │   │   └── RaceHudWidget.*        # UMG shell (polls model at UpdateRateHz)
 │   ├── AI/
-│   │   └── RaceAIDriver.*         # pursuit driver + recovery + opt-in line-commit racecraft (Apply* only)
+│   │   └── RaceAIDriver.*         # pursuit driver + recovery + opt-in line-commit/defend-the-line racecraft (Apply* only)
 │   └── Test/
 │       ├── RaceTestGameMode.*         # flat-map harness GameMode (URL-selected)
 │       ├── RaceTrackTestGameMode.*    # circuit harness GameMode (URL-selected)
@@ -38,6 +38,7 @@ game/RacingGame/Source/
 │       ├── RaceHudTestGameMode.*      # HUD harness GameMode
 │       ├── RaceCockpitTestGameMode.*  # cockpit camera harness GameMode
 │       ├── Task19RacecraftGameMode.*  # racecraft harness GameMode
+│       ├── Task20RacecraftGameMode.*  # defense harness GameMode
 │       ├── Task2Probe.*              # Tasks 2/3/5/6 metrics (frozen schemas)
 │       ├── Task7Probe.*              # Task 7 validation + lap driver
 │       ├── Task8Probe.*              # Task 8 teleport state program
@@ -45,7 +46,8 @@ game/RacingGame/Source/
 │       ├── Task10Probe.*             # Task 10 camera measurement program
 │       ├── Task17Probe.*             # Task 17 HUD read-out program
 │       ├── Task18Probe.*             # Task 18 cockpit view program
-│       └── Task19Probe.*             # Task 19 racecraft program
+│       ├── Task19Probe.*             # Task 19 racecraft program
+│       └── Task20Probe.*             # Task 20 defense program
 └── TP_VehicleAdv/         # Epic template code and content (retained, see above)
 ```
 
@@ -140,6 +142,17 @@ and rival absolute distances only and writes no race state.
 `GetUnwrappedDistance` exposes the absolute unwrapped centerline
 distance; `GetProgressDistance` keeps its Task 9 meaning.
 
+## Defend-the-line racecraft (Task 20)
+
+The same commanded-offset channel serves the opposite direction: when
+the defender's layer is enabled, it watches the nearest rival BEHIND it
+and, inside the 600 cm rear window, commands its frozen line plus
+120 cm toward the attacker side (defender -120 commands exactly the
+0 cm centerline, never crossing into the attacker half). Outside the
+window, or after the pass, it cedes to the frozen line. The attacker
+keeps its unchanged Task 19 layer; neither layer reads or writes the
+other's commanded state, and pace semantics are untouched.
+
 ## Positions, field, and results (Tasks 11-15)
 
 `ARaceManager::GetPosition` derives live standings from finished flags,
@@ -161,8 +174,8 @@ and final times), cleared on reset. Progression: 2-participant order,
   program, the Task 10 camera program, the Task 11 position program,
   the Task 12/14 field programs, the Task 13 pace program, and the
   Task 15 results program, the Task 16 full-race program, the
-  Task 17 HUD program, the Task 18 cockpit program, and the Task 19
-  racecraft program, each selected
+  Task 17 HUD program, the Task 18 cockpit program, the Task 19
+  racecraft program, and the Task 20 defense program, each selected
   by its own `?game=` GameMode.
 - Both maps created by `Content/Python/*_create_map.py`, kept
   regenerable. Test GameModes are selected with `?game=` so project
