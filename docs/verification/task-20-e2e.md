@@ -175,15 +175,26 @@ so it does not depend on vehicle physics, suspension, or collision
 behavior. Records `defensive_offset_cm`.
 
 ### 4. `t20_no_defense_outside_window`
-On every probe tick where the absolute separation exceeds the rear window,
+The 600 cm threshold is unchanged. A probe sample is evaluable for Gate 4
+only when both the probe's measured separation and the defender layer's
+`RivalGapCm` independently indicate that the rival is outside the rear
+window, with separation strictly greater than 600 cm. This is because both
+views derive from centerline points spaced roughly 250 cm apart
+(`RaceTrack.cpp`), so at the window boundary the two representations can
+differ by one quantum for an isolated tick; counting such a tick as an
+exercised outside-window sample would misclassify a genuine in-window
+frame. Then:
 
-```text
-SeparationCm > RearWindowCm
-```
+- **Agreement: outside > 600 on both views** -> evaluable; an unwanted
+  defensive command is a Gate 4 violation.
+- **Agreement: inside/on boundary on either view** -> not an
+  outside-window sample.
+- **Views disagree** -> skipped entirely; neither an exercised sample nor
+  a violation.
 
-the defender's commanded `LineOffset` stays within `CedeToleranceCm` (1.0 cm)
-of the frozen `LineDefender` (-120 cm). This gate is satisfied only if both
-conditions hold:
+On evaluable samples, the defender's commanded `LineOffset` must stay
+within `CedeToleranceCm` (1.0 cm) of the frozen `LineDefender` (-120 cm).
+This gate is satisfied only if both conditions hold:
 
 - the outside-window condition is actually exercised at least once
   (`outside_window_samples > 0`);
@@ -193,7 +204,8 @@ conditions hold:
 This is the discriminating negative case: it fails if the negative condition
 is never exercised, if the decision layer is unconditional, or if the
 defender line was simply changed permanently rather than commanded
-conditionally.
+conditionally. A genuinely unconditional defender produces persistent
+agreement outside the window and therefore still fails this gate.
 
 ### 5. `t20_defense_holds_centerline`
 After the absolute separation leaves the rear window,
