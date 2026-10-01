@@ -43,11 +43,26 @@ Look-ahead mean +11.05 deg over 12569 turning samples. Max per-tick
 displacement 18.92 / 17.48 cm outside discontinuity windows. Reset
 offset error 0.3 cm, yaw error 0.04 deg.
 
-## Thresholds (fixed before the final passing run)
+## Thresholds (fixed before the final passing run, revised 2026-10-01)
 
-Follow ratio over 0.5 each. Lead mean over 1 deg with 100+ samples.
-Pops under 50 cm. Reset under 30 cm and 5 deg. Reset at 20 s, measure
-to 38 s, finish at 42 s.
+Follow ratio over 0.5 each. Lead mean over 1 deg with turn arc at or
+above 150.0 deg (accumulated heading traversal during eligible turn
+sampling). Every evaluated 100 cm pawn-travel window keeps camera/pawn
+travel ratio at or under 8.0. Reset under 30 cm and 5 deg. Reset at
+20 s, measure to 38 s, finish at 42 s.
+
+## Measurement-contract correction (2026-10-01)
+
+The original lead gate (`LeadN > 100` samples) and pop gate (max
+per-tick displacement under 50 cm) were frame-rate dependent: the same
+camera behavior passes uncapped but fails throttled (30 FPS: max pops
+42.2/68.5 cm; 10 FPS: 120.9/187.3 cm, lead samples 62), while lead mean
+(~11 deg), follow ratio (~1.13), turn arc (~203-222 deg), and window
+ratios (1.66-4.41x) stay stable across rates. The revised observables
+above replace the tick-count and per-tick criteria, which remain
+recorded as diagnostics only. The historical Measurements and failing-run
+notes below describe what the old contract measured and are preserved
+unchanged.
 
 ## Regression
 

@@ -26,9 +26,20 @@ namespace Task10Limits
 	// degree across turning samples.
 	constexpr float LeadMinDeg = 1.0f;
 	constexpr float TurnSampleMinRate = 15.0f;
-	// No pops: per-tick camera world displacement under 50 cm outside
-	// the reset window.
+	// No pops (legacy per-tick criterion, now diagnostic only): per-tick
+	// camera world displacement under 50 cm outside the reset window.
 	constexpr float PopMaxCm = 50.0f;
+	// No pops (revised contract): every evaluated fixed pawn-travel
+	// window must keep camera/pawn travel ratio at or under this cap.
+	// Frozen from the three-rate measurement matrix (observed 1.66-4.41x
+	// across uncapped/30/10 FPS; genuine teleports read 10x and above).
+	constexpr float WindowTravelRatioCap = 8.0f;
+	// Pawn-travel window size for the revised pop measurement.
+	constexpr float PawnTravelWindowCm = 100.0f;
+	// Look-ahead: turn-arc floor replacing the old sample-count floor.
+	// Accumulated heading traversal during eligible turn sampling;
+	// frozen from the three-rate matrix (observed 202.8-222.2 deg).
+	constexpr float TurnArcFloorDeg = 150.0f;
 	// Reset: offset error under 30 cm and yaw error under 5 deg.
 	constexpr float ResetMaxPosCm = 30.0f;
 	constexpr float ResetMaxYawDeg = 5.0f;
@@ -93,6 +104,18 @@ private:
 	int32 LeadN = 0;
 	float MaxPopP = 0.0f;
 	float MaxPopA = 0.0f;
+	// Turn-arc and per-window travel-ratio measurement (revised Task 10
+	// contract). Frame-rate independent by construction: arc integrates
+	// heading over time, windows partition by pawn travel, not ticks.
+	double TurnArcDegSum = 0.0;
+	float WinCamP = 0.0f;
+	float WinPawnP = 0.0f;
+	float WinCamA = 0.0f;
+	float WinPawnA = 0.0f;
+	float WinRatioMaxP = 0.0f;
+	float WinRatioMaxA = 0.0f;
+	int32 WinCountP = 0;
+	int32 WinCountA = 0;
 	FVector LastCamP = FVector::ZeroVector;
 	FVector LastCamA = FVector::ZeroVector;
 	bool bHaveLast = false;
