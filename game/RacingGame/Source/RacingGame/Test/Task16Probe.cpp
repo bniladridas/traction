@@ -311,7 +311,10 @@ void ATask16Probe::WriteResults(bool bOk, const FString& Note) const
 {
 	const bool bConf = bConfigured;
 	const bool bAll = bAllFinished;
-	const bool bPop = bPopulated;
+	// Populated means populated AND consistent: entries must carry 3 laps
+	// with positive best/last times (computed as bConsistent above). A
+	// corrupt-but-populated table must not pass this gate.
+	const bool bPop = bPopulated && bConsistent;
 	const bool bOrd = bOrderTotal;
 	const bool bRes = bResetDone && bResetLaps && bResetCleared;
 	const bool bDead = bDeadlockOk;
