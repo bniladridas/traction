@@ -132,8 +132,14 @@ void ATask13Probe::Tick(float Delta)
 			}
 			if (Driver0 && Driver1)
 			{
+				// Frozen tiers AND frozen lines read back exactly. The
+				// parallel-line assignment is what lets the pace overtake
+				// complete without contact, so it is asserted here rather
+				// than assumed.
 				bPaceOk = (Driver0->GetPaceFactor() == Task13Limits::PaceSlow)
-					&& (Driver1->GetPaceFactor() == Task13Limits::PaceFast);
+					&& (Driver1->GetPaceFactor() == Task13Limits::PaceFast)
+					&& (Driver0->GetFrozenLineOffset() == Task13Limits::LineSlow)
+					&& (Driver1->GetFrozenLineOffset() == Task13Limits::LineFast);
 			}
 			UE_LOG(LogTemp, Display, TEXT("RACEPACE13E2E: field acquired pace=%d"), bPaceOk);
 		}

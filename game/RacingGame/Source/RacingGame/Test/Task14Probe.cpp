@@ -139,7 +139,30 @@ void ATask14Probe::Tick(float Delta)
 				bTiers = bTiers && (Drivers[i]->GetPaceFactor() == Task14Limits::PaceTiers[i]);
 			}
 			bPaceOk = bTiers;
+			// Frozen lines read back exactly, and the staged grid must
+			// already satisfy the pairwise separation invariant before the
+			// race starts. Both are part of what "field correctly staged"
+			// means; neither is assumed.
+			bool bLines = true;
+			for (int32 i = 0; i < 5; ++i)
+			{
+				bLines = bLines && (Drivers[i]->GetFrozenLineOffset() == Task14Limits::LineTiers[i]);
+			}
+			float MinSepCm = FLT_MAX;
+			for (int32 i = 0; i < 5; ++i)
+			{
+				for (int32 j = i + 1; j < 5; ++j)
+				{
+					if (AIs[i] && AIs[j])
+					{
+						MinSepCm = FMath::Min(MinSepCm, FVector::Dist2D(AIs[i]->GetActorLocation(), AIs[j]->GetActorLocation()));
+					}
+				}
+			}
+			bLines = bLines && (MinSepCm >= Task14Limits::GridMinSeparationCm);
+			bFieldReady = bFieldReady && bLines;
 			UE_LOG(LogTemp, Display, TEXT("RACEFIELD14E2E: field acquired pace=%d"), bPaceOk);
+			UE_LOG(LogTemp, Display, TEXT("RACEFIELD14E2E: field acquired lines=%d minsep=%.0f"), bLines, MinSepCm);
 		}
 	}
 

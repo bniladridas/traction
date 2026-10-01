@@ -1,17 +1,16 @@
 """Local regression check for traction (runs on the Mac, not in CI).
-Reads the seventeen headless E2E artifacts produced by the fifteen local
+Reads the eighteen headless E2E artifacts produced by the fifteen local
 runs (flat map, circuit map, race-state map, AI map, camera map,
 position map, field map, pace map, field6 map, results map, full-race
 map, HUD-race map, cockpit map, racecraft program and defense program
-on the circuit map)
-and fails unless every flag is true: 30 frozen regression flags plus 10
-Task 8 gates plus 6 Task 9 gates plus 6 Task 10 gates plus 6 Task 11
-gates plus 6 Task 12 gates plus 6 Task 13 gates plus 6 Task 14 gates
-plus 6 Task 15 gates plus 6 Task 16 gates plus 6 Task 17 gates plus 6
-Task 18 gates plus 6 Task 19 gates plus 6 Task 20 gates.
-(Note: the Task 2 program also writes Saved/Task4E2E/results.json, which
-is intentionally not loaded by this checker; the 30 frozen flags above
-cover Tasks 2, 3, 5, 6, and 7.)
+on the circuit map; the Task 2 program additionally writes the Task 4
+architecture artifact)
+and fails unless every flag is true: 30 frozen regression flags plus 7
+Task 4 gates plus 10 Task 8 gates plus 6 Task 9 gates plus 6 Task 10
+gates plus 6 Task 11 gates plus 6 Task 12 gates plus 6 Task 13 gates
+plus 6 Task 14 gates plus 6 Task 15 gates plus 6 Task 16 gates plus 6
+Task 17 gates plus 6 Task 18 gates plus 6 Task 19 gates plus 6 Task 20
+gates.
 Usage from the repo root: python3 tools/check_regression.py
 """
 import json
@@ -24,6 +23,8 @@ T3_KEYS = ['pass_task3_gravity', 'pass_task3_mass', 'pass_task3_brake_force',
            'pass_task3_wheels']
 T5_KEYS = ['contact_ok', 'susp_ok', 'load_ok', 'long_ok', 'lat_ok',
            'circle_ok']
+T4_KEYS = ['mass_ok', 'gravity_ok', 'brake_ok', 'revcap_ok',
+           'engine_points_ok', 'wheels_roles_ok', 'movement_matches_pawn']
 T6_KEYS = ['engine_response', 'rpm_bounds', 'gear_progression',
            'reverse_drive', 'torque_transfer', 'engine_braking']
 T7_KEYS = ['track_load', 'road_contact', 'start_alignment',
@@ -68,6 +69,7 @@ def load(name):
 
 def main():
     t2 = load('Task2E2E')
+    t4 = load('Task4E2E')
     t5 = load('Task5E2E')
     t6 = load('Task6E2E')
     t7 = load('Task7E2E')
@@ -85,6 +87,7 @@ def main():
     t19 = load('Task19E2E')
     t20 = load('Task20E2E')
     flags = ([t2[k] for k in T2_KEYS] + [t2[k] for k in T3_KEYS]
+             + [t4[k] for k in T4_KEYS]
              + [t5[k] for k in T5_KEYS] + [t6[k] for k in T6_KEYS]
              + [t7[k] for k in T7_KEYS] + [t8[k] for k in T8_KEYS]
              + [t9[k] for k in T9_KEYS] + [t10[k] for k in T10_KEYS]
@@ -96,7 +99,7 @@ def main():
              + [t19[k] for k in T19_KEYS]
              + [t20[k] for k in T20_KEYS])
     print('%d flags: %s' % (len(flags), flags))
-    ok = len(flags) == 112 and all(flags) and t2['reached_end']
+    ok = len(flags) == 119 and all(flags) and t2['reached_end']
     print('PASS' if ok else 'FAIL')
     return 0 if ok else 1
 
