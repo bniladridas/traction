@@ -88,6 +88,29 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Race|AI|Racecraft")
 	float RacecraftFreeSideSign = 1.0f;
 
+	// ---- Task 20 defense seam (defend-the-line, second slice) ----
+	// Same channel, opposite direction: when enabled, this driver responds
+	// to the nearest rival BEHIND it inside the rear window by commanding
+	// a bounded defensive line. Staged per-instance; a driver carries one
+	// role. Reads the same public seams (manager participants, rival
+	// absolute distances) and writes no race, manager, lap, or order
+	// state. The Task 19 attacker path below is untouched by this block.
+	UPROPERTY(EditAnywhere, Category = "Race|AI|Racecraft")
+	bool bDefenseEnabled = false;
+	// Rearward window (cm) inside which a rival behind provokes defense.
+	// Frozen at contract time.
+	UPROPERTY(EditAnywhere, Category = "Race|AI|Racecraft")
+	float DefenseRearWindowCm = 600.0f;
+	// Lateral shift (cm) toward the attacker side when defending. Added
+	// to the frozen line; the staged sum must respect the centerline
+	// bound from the contract.
+	UPROPERTY(EditAnywhere, Category = "Race|AI|Racecraft")
+	float DefenseShiftCm = 120.0f;
+	// Defense direction: +1 shifts toward positive lateral (right), -1
+	// toward negative (left). Staged, not inferred from other cars.
+	UPROPERTY(EditAnywhere, Category = "Race|AI|Racecraft")
+	float DefenseDirectionSign = 1.0f;
+
 	// LineOffset captured at BeginPlay; the frozen baseline the commanded
 	// offset always returns to.
 	float GetFrozenLineOffset() const { return FrozenLineOffset; }
@@ -95,8 +118,9 @@ public:
 	// FrozenLineOffset when not committed.
 	float GetCommandedLineOffset() const { return CommandedLineOffset; }
 	bool IsRacecraftCommitted() const { return bRacecraftCommitted; }
-	// Absolute separation to the nearest rival ahead, cm; negative when none
-	// is ahead.
+	// Absolute separation to the rival of interest, cm: nearest rival ahead
+	// for the Task 19 attack role, nearest rival behind for the Task 20
+	// defense role. Negative when no rival is on the watched side.
 	float GetRacecraftRivalGapCm() const { return RivalGapCm; }
 
 	// Re-arms the committed offset back to the frozen line.

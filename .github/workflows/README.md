@@ -35,7 +35,7 @@ part checkable automatically is checked consistently.
 - `site.yml`: static site validation and Pages deployment.
 
 Unreal build and headless E2E run on the Mac per `docs/testing.md`;
-`tools/check_regression.py` gates the 106 flags locally.
+`tools/check_regression.py` gates the 112 flags locally.
 
 ## Why no macOS Unreal CI
 
