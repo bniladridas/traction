@@ -9,6 +9,9 @@ Task 8 gates plus 6 Task 9 gates plus 6 Task 10 gates plus 6 Task 11
 gates plus 6 Task 12 gates plus 6 Task 13 gates plus 6 Task 14 gates
 plus 6 Task 15 gates plus 6 Task 16 gates plus 6 Task 17 gates plus 6
 Task 18 gates plus 6 Task 19 gates plus 6 Task 20 gates.
+(Note: the Task 2 program also writes Saved/Task4E2E/results.json, which
+is intentionally not loaded by this checker; the 30 frozen flags above
+cover Tasks 2, 3, 5, 6, and 7.)
 Usage from the repo root: python3 tools/check_regression.py
 """
 import json

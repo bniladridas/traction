@@ -222,6 +222,14 @@ offset never exceeds the centerline target at any racing tick: the recorded
 response is conditional, reversible, and bounded, completing the defend then
 cede cycle without ever crossing into the attacker's half.
 
+Measurement note: the probe records the observed de-committed/frozen state
+and the final cede value within a run that separately demonstrated window
+entry and commitment. It does not assert the temporal ordering of window
+exit before cede; that ordering is not probed. (The all-ticks centerline
+bound above is temporally meaningful as stated.) If a future stage needs to
+prove commit-then-exit-then-cede ordering, that is a new verification
+contract, not a reading of this gate.
+
 ### 6. `t20_scope_frozen`
 Runtime invariants plus static repository checks, proving the seam is additive
 and read-only:

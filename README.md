@@ -72,7 +72,7 @@ traction/
 │   ├── graphics.md
 │   ├── audio.md
 │   ├── release.md
-│   └── verification/        # per-task E2E evidence (tasks 1-16)
+│   └── verification/        # per-task E2E evidence (tasks 1-20)
 ├── site/                    # static project site (GitHub Pages)
 └── game/                    # UE5 project (RacingGame module + template base)
     └── RacingGame/

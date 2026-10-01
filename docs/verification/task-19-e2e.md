@@ -202,6 +202,13 @@ the attacker's commanded `LineOffset` returns to within `CedeToleranceCm`
 the run. Records `cede_offset_cm`. Proves the commitment is conditional and
 reversible, completing the attack then cede cycle.
 
+Measurement note: the probe records the observed de-committed/frozen state
+and the final cede value within a run that separately demonstrated window
+entry and commitment. It does not assert the temporal ordering of window
+exit before cede; that ordering is not probed. If a future stage needs to
+prove commit-then-exit-then-cede ordering, that is a new verification
+contract, not a reading of this gate.
+
 ### 6. `t19_scope_frozen`
 Runtime invariants plus static repository checks, proving the seam is additive
 and read-only:

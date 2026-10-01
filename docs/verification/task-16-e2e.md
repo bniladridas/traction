@@ -10,7 +10,9 @@ persistence, scoring, physics, or visual work.
 
 Extend the verified race distance from 2 to 3 laps and prove a complete
 longer race end-to-end: LapCount 3 via per-run override (the struct
-default stays 2 for all frozen tasks), all six finish with 3 laps,
+default stays 2 for all frozen tasks), all five AI finish with 3 laps
+(the driven player is parked clear and excluded from completion by
+design),
 results populated with valid entries, total order, reset clearing, and
 deadlock freedom.
 
