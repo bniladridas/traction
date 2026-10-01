@@ -146,18 +146,24 @@ void ARaceTrack::BuildTrack()
 	}
 
 	// Checkpoints evenly spaced by distance; index 0 is the start line.
+	// Skipped when the centerline has no length: Fmod by zero would
+	// poison every checkpoint distance, and an empty table is the honest
+	// signal the probes already handle.
 	Checkpoints.Reset();
 	const int32 NCheck = FMath::Max(1, TrackConfig.CheckpointCount);
-	for (int32 k = 0; k < NCheck; ++k)
+	if (TrackLength > 0.0f)
 	{
-		const float At = FMath::Fmod(TrackConfig.StartLineDistance + static_cast<float>(k) * TrackLength / static_cast<float>(NCheck), TrackLength);
-		const FRaceTrackCenterPoint P = SampleAtDistance(At);
-		FRaceTrackCheckpoint CP;
-		CP.Index = k;
-		CP.Position = P.Position;
-		CP.Forward = P.Forward;
-		CP.Width = TrackConfig.TrackWidth;
-		Checkpoints.Add(CP);
+		for (int32 k = 0; k < NCheck; ++k)
+		{
+			const float At = FMath::Fmod(TrackConfig.StartLineDistance + static_cast<float>(k) * TrackLength / static_cast<float>(NCheck), TrackLength);
+			const FRaceTrackCenterPoint P = SampleAtDistance(At);
+			FRaceTrackCheckpoint CP;
+			CP.Index = k;
+			CP.Position = P.Position;
+			CP.Forward = P.Forward;
+			CP.Width = TrackConfig.TrackWidth;
+			Checkpoints.Add(CP);
+		}
 	}
 
 	// Start pose on the line; spawn sits behind it.

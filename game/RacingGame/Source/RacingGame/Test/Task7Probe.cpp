@@ -118,8 +118,13 @@ void ATask7Probe::Tick(float Delta)
 		bDriving = true;
 		LastIdx = NearestCenterIndex(Vehicle->GetActorLocation());
 		const TArray<FRaceTrackCenterPoint>& Pts = Track->GetCenterPoints();
-		UnwrappedS = Pts[LastIdx].Distance;
-		UnwrappedStart = UnwrappedS;
+		// Degenerate track: no valid anchor; driving proceeds but the
+		// lap/validation gates below fail honestly instead of crashing.
+		if (Pts.IsValidIndex(LastIdx))
+		{
+			UnwrappedS = Pts[LastIdx].Distance;
+			UnwrappedStart = UnwrappedS;
+		}
 		LapStartLoc = Vehicle->GetActorLocation();
 		const TArray<FRaceTrackCheckpoint>& CPs = Track->GetCheckpoints();
 		if (CPs.Num() > 0)

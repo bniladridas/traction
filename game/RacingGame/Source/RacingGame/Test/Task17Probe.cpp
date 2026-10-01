@@ -65,6 +65,12 @@ void ATask17Probe::DrivePlayer()
 	const TArray<FRaceTrackCenterPoint>& Pts = Track->GetCenterPoints();
 	const float L = Track->GetTrackLength();
 	const int32 N = Pts.Num();
+	// Degenerate track (fewer than 2 center points): no valid pursuit
+	// geometry; the stall/timeout trip below produces the verdict.
+	if (N < 2 || L <= 0.0f)
+	{
+		return;
+	}
 	const int32 Idx = NearestIndex(Player->GetActorLocation());
 	if (!bPlayerAnchored)
 	{
@@ -295,13 +301,18 @@ void ATask17Probe::Tick(float Delta)
 			{
 				const TArray<FRaceTrackCenterPoint>& Pts = Track->GetCenterPoints();
 				const int32 Idx = NearestIndex(Player->GetActorLocation());
-				const FRaceTrackCenterPoint& P = Pts[Idx];
-				const float Yaw = FMath::RadiansToDegrees(FMath::Atan2(P.Forward.Y, P.Forward.X));
-				Player->SetActorLocationAndRotation(FVector(P.Position.X, P.Position.Y, 40.0f),
-					FRotator(0.0f, Yaw, 0.0f), false, nullptr, ETeleportType::TeleportPhysics);
-				Player->ResetMotion();
-				Manager->ReanchorParticipant(Player);
-				bPlayerAnchored = false;
+				// Degenerate track: no valid recovery pose. Leave the car
+				// where it is; the stall trip below produces the verdict.
+				if (Pts.IsValidIndex(Idx))
+				{
+					const FRaceTrackCenterPoint& P = Pts[Idx];
+					const float Yaw = FMath::RadiansToDegrees(FMath::Atan2(P.Forward.Y, P.Forward.X));
+					Player->SetActorLocationAndRotation(FVector(P.Position.X, P.Position.Y, 40.0f),
+						FRotator(0.0f, Yaw, 0.0f), false, nullptr, ETeleportType::TeleportPhysics);
+					Player->ResetMotion();
+					Manager->ReanchorParticipant(Player);
+					bPlayerAnchored = false;
+				}
 				PlayerCheckT = Elapsed;
 				PlayerCheckS = PlayerS;
 				UE_LOG(LogTemp, Display, TEXT("RACEHUD17E2E: player recovered at s=%.0f"), PlayerS);

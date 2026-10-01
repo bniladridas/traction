@@ -79,6 +79,12 @@ void ATask15Probe::DrivePlayer()
 {	const TArray<FRaceTrackCenterPoint>& Pts = Track->GetCenterPoints();
 	const float L = Track->GetTrackLength();
 	const int32 N = Pts.Num();
+	// Degenerate track (fewer than 2 center points): no valid pursuit
+	// geometry; the stall/timeout trip below produces the verdict.
+	if (N < 2 || L <= 0.0f)
+	{
+		return;
+	}
 	const int32 Idx = NearestIndex(Player->GetActorLocation());
 	if (!bPlayerAnchored)
 	{
@@ -240,13 +246,18 @@ void ATask15Probe::Tick(float Delta)
 			{
 				const TArray<FRaceTrackCenterPoint>& Pts = Track->GetCenterPoints();
 				const int32 Idx = NearestIndex(Player->GetActorLocation());
-				const FRaceTrackCenterPoint& P = Pts[Idx];
-				const float Yaw = FMath::RadiansToDegrees(FMath::Atan2(P.Forward.Y, P.Forward.X));
-				Player->SetActorLocationAndRotation(FVector(P.Position.X, P.Position.Y, 40.0f),
-					FRotator(0.0f, Yaw, 0.0f), false, nullptr, ETeleportType::TeleportPhysics);
-				Player->ResetMotion();
-				Manager->ReanchorParticipant(Player);
-				bPlayerAnchored = false;
+				// Degenerate track: no valid recovery pose. Leave the car
+				// where it is; the stall trip below produces the verdict.
+				if (Pts.IsValidIndex(Idx))
+				{
+					const FRaceTrackCenterPoint& P = Pts[Idx];
+					const float Yaw = FMath::RadiansToDegrees(FMath::Atan2(P.Forward.Y, P.Forward.X));
+					Player->SetActorLocationAndRotation(FVector(P.Position.X, P.Position.Y, 40.0f),
+						FRotator(0.0f, Yaw, 0.0f), false, nullptr, ETeleportType::TeleportPhysics);
+					Player->ResetMotion();
+					Manager->ReanchorParticipant(Player);
+					bPlayerAnchored = false;
+				}
 				PlayerCheckT = Elapsed;
 				PlayerCheckS = PlayerS;
 				UE_LOG(LogTemp, Display, TEXT("RACERES15E2E: player recovered at s=%.0f"), PlayerS);
@@ -405,41 +416,53 @@ void ATask15Probe::Tick(float Delta)
 			}
 			// Immutability probe, staged across ticks so the crossing is
 			// genuinely observed: park before CP0, cross it next tick.
+			// Degenerate track (no checkpoints): skip staging and let the
+			// program timeout below produce the verdict instead of
+			// indexing an empty table.
 			const TArray<FRaceTrackCheckpoint>& CPs = Track->GetCheckpoints();
-			FVector Loc = CPs[0].Position - CPs[0].Forward * 150.0f + FVector(0.0f, 0.0f, 40.0f);
-			FRotator Rot = FRotator(0.0f, FMath::RadiansToDegrees(FMath::Atan2(CPs[0].Forward.Y, CPs[0].Forward.X)), 0.0f);
-			Player->SetActorLocationAndRotation(Loc, Rot, false, nullptr, ETeleportType::TeleportPhysics);
-			for (int32 i = 0; i < 6; ++i)
+			if (CPs.Num() > 0)
 			{
-				SnapLaps[i] = Manager->GetParticipantLaps(i);
-			}
-			SnapOrder = OrderString();
-			// Snapshot the immutable results table itself (not live
-			// positions, which keep updating as cars move post-finish).
-			{
-				const FRaceResults& R = Manager->GetResults();
+				FVector Loc = CPs[0].Position - CPs[0].Forward * 150.0f + FVector(0.0f, 0.0f, 40.0f);
+				FRotator Rot = FRotator(0.0f, FMath::RadiansToDegrees(FMath::Atan2(CPs[0].Forward.Y, CPs[0].Forward.X)), 0.0f);
+				Player->SetActorLocationAndRotation(Loc, Rot, false, nullptr, ETeleportType::TeleportPhysics);
 				for (int32 i = 0; i < 6; ++i)
 				{
-					SnapResultOrder[i] = R.Ordered[i].ParticipantIndex;
-					SnapBest[i] = R.Ordered[i].BestLapTime;
-					SnapLast[i] = R.Ordered[i].LastLapTime;
+					SnapLaps[i] = Manager->GetParticipantLaps(i);
 				}
+				SnapOrder = OrderString();
+				// Snapshot the immutable results table itself (not live
+				// positions, which keep updating as cars move post-finish).
+				// Bounded: a short table fails the Num()==6 checks below
+				// instead of reading out of bounds.
+				{
+					const FRaceResults& R = Manager->GetResults();
+					for (int32 i = 0; i < 6 && R.Ordered.IsValidIndex(i); ++i)
+					{
+						SnapResultOrder[i] = R.Ordered[i].ParticipantIndex;
+						SnapBest[i] = R.Ordered[i].BestLapTime;
+						SnapLast[i] = R.Ordered[i].LastLapTime;
+					}
+				}
+				bImmutableArmed = true;
+				bImmutableStaged = true;
+				ImmutableStageTime = Elapsed;
+				UE_LOG(LogTemp, Display, TEXT("RACERES15E2E: all finished, immutable probe staged"));
 			}
-			bImmutableArmed = true;
-			bImmutableStaged = true;
-			ImmutableStageTime = Elapsed;
-			UE_LOG(LogTemp, Display, TEXT("RACERES15E2E: all finished, immutable probe staged"));
 		}
 	}
 	if (bImmutableArmed && !bImmutableCrossed && (Elapsed - ImmutableStageTime) > 0.5)
 	{
-		// Cross CP0: must be ignored in Finished phase.
+		// Cross CP0: must be ignored in Finished phase. Skipped on a
+		// degenerate track; the program timeout below then decides.
 		const TArray<FRaceTrackCheckpoint>& CPs = Track->GetCheckpoints();
-		FVector Loc = CPs[0].Position + CPs[0].Forward * 150.0f + FVector(0.0f, 0.0f, 40.0f);
-		FRotator Rot = FRotator(0.0f, FMath::RadiansToDegrees(FMath::Atan2(CPs[0].Forward.Y, CPs[0].Forward.X)), 0.0f);
-		Player->SetActorLocationAndRotation(Loc, Rot, false, nullptr, ETeleportType::TeleportPhysics);
-		bImmutableCrossed = true;
-		ImmutableCheckAt = Elapsed + 1.0;
+		if (CPs.Num() > 0)
+		{
+			FVector Loc = CPs[0].Position + CPs[0].Forward * 150.0f + FVector(0.0f, 0.0f, 40.0f);
+			FRotator Rot = FRotator(0.0f, FMath::RadiansToDegrees(FMath::Atan2(CPs[0].Forward.Y, CPs[0].Forward.X)), 0.0f);
+			Player->SetActorLocationAndRotation(Loc, Rot, false, nullptr, ETeleportType::TeleportPhysics);
+			bImmutableCrossed = true;
+			ImmutableCheckAt = Elapsed + 1.0;
+		}
 	}
 	if (bImmutableCrossed && Elapsed >= ImmutableCheckAt)
 	{
