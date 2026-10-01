@@ -29,7 +29,7 @@ Implemented: mass, gears, suspension, tire forces, no aero (deferred).
 
 ## 4. Module architecture (UE5)
 
-As built (Task 12 state). Future dirs are targets, not existing code.
+As built (Task 20 state). Future dirs are targets, not existing code.
 
 ```text
 game/RacingGame/Source/RacingGame/
@@ -37,12 +37,12 @@ game/RacingGame/Source/RacingGame/
 ├── Camera/    # chase driver + config
 ├── Track/     # centerline, checkpoints, start/finish, grid
 ├── Race/      # manager, laps, positions, timing
-├── AI/        # pursuit driver + recovery (no overtake yet)
+├── AI/        # pursuit driver + recovery + opt-in line-commit/defend racecraft
 ├── Test/      # GameModes + E2E probes (verification only)
 └── TP_VehicleAdv/ (template base, retained for project defaults)
 ```
 
-Future: cockpit cameras, racing line, UI (menu, HUD, pause, settings),
+Future: racing line, UI (menu, pause, settings),
 Audio (engine RPM/load, tires, impacts, ambient), Save (settings, best
 laps, results, versioned). Per the rules below, those dirs are created
 only when their systems land.

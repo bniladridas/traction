@@ -1,7 +1,7 @@
 // Task 16 E2E probe (verification only, safe to delete).
 // Races a driven player plus 5 AI drivers to an all-finished 3-lap
 // race, asserting configured laps, all-finish with 3 laps each, results
-// populated with 6 valid entries, total order, reset clearing, and
+// populated with 5 valid entries, total order, reset clearing, and
 // deadlock freedom. Writes Saved/Task16E2E/results.json, then quits.
 // Thresholds below were fixed BEFORE the first passing run. Tasks 2-15
 // programs, schemas, and thresholds are untouched.
