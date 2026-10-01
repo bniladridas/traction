@@ -60,6 +60,12 @@ void ATask10Probe::DrivePlayer()
 	const TArray<FRaceTrackCenterPoint>& Pts = Track->GetCenterPoints();
 	const float L = Track->GetTrackLength();
 	const int32 N = Pts.Num();
+	// Degenerate track (fewer than 2 center points): no valid pursuit
+	// geometry; the stall/timeout trip below produces the verdict.
+	if (N < 2 || L <= 0.0f)
+	{
+		return;
+	}
 	const int32 Idx = NearestIndex(Player->GetActorLocation());
 	if (!bPlayerAnchored)
 	{
