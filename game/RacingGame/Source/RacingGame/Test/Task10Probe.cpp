@@ -440,6 +440,7 @@ void ATask10Probe::WriteResults(bool bOk, const FString& Note) const
 		TEXT("\"lead_mean_deg\":%.2f,\"lead_samples\":%d,\"max_pop_p_cm\":%.2f,\"max_pop_a_cm\":%.2f,")
 		TEXT("\"turn_arc_deg\":%.1f,\"turn_arc_floor_deg\":%.1f,\"window_ratio_max\":%.2f,\"window_ratio_cap\":%.1f,\"window_count\":%d,")
 		TEXT("\"window_count_p\":%d,\"window_count_a\":%d,")
+		TEXT("\"window_ratio_max_p\":%.2f,\"window_ratio_max_a\":%.2f,")
 		TEXT("\"reset_pos_err_cm\":%.1f,\"reset_yaw_err_deg\":%.2f,\"frames\":%d,\"note\":\"%s\"}"),
 		bFollowP ? TEXT("true") : TEXT("false"), bFollowA ? TEXT("true") : TEXT("false"),
 		bLead ? TEXT("true") : TEXT("false"), bNoPops ? TEXT("true") : TEXT("false"),
@@ -447,7 +448,7 @@ void ATask10Probe::WriteResults(bool bOk, const FString& Note) const
 		CamPathP, PawnPathP, CamPathA, PawnPathA, LeadMean, LeadN, MaxPopP, MaxPopA,
 		TurnArcDegSum, Task10Limits::TurnArcFloorDeg,
 		FMath::Max(WinRatioMaxP, WinRatioMaxA), Task10Limits::WindowTravelRatioCap,
-		WinCountP + WinCountA, WinCountP, WinCountA,
+		WinCountP + WinCountA, WinCountP, WinCountA, WinRatioMaxP, WinRatioMaxA,
 		ResetPosErr, ResetYawErr, Frames, *Note);
 
 	const FString Dir = FPaths::ProjectSavedDir() + TEXT("Task10E2E/");

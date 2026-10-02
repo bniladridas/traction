@@ -47,8 +47,10 @@ offset error 0.3 cm, yaw error 0.04 deg.
 
 Follow ratio over 0.5 each. Lead mean over 1 deg with turn arc at or
 above 150.0 deg (accumulated heading traversal during eligible turn
-sampling). Every evaluated 100 cm pawn-travel window keeps camera/pawn
-travel ratio at or under 8.0. Reset under 30 cm and 5 deg. Reset at
+sampling). Every evaluated pawn-travel window reaches at least 100 cm of
+accumulated pawn travel, with the window allowed to overshoot the 100 cm
+boundary by up to one measured tick. Each evaluated window keeps the
+camera/pawn travel ratio at or under 8.0. Reset under 30 cm and 5 deg. Reset at
 20 s, measure to 38 s, finish at 42 s.
 
 ## Measurement-contract correction (2026-10-01)
