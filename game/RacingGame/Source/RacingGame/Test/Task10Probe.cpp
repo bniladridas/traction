@@ -238,16 +238,71 @@ void ATask10Probe::Tick(float Delta)
 			PrevPawnA = AI->GetActorLocation();
 		}
 	}
+	// Exclusion state hoisted so window accumulation can share it.
+	// Behavior-neutral: pure reads plus the same conditional timestamp
+	// update, before any of its readers.
+	bool bRecoveryTick = false;
+	if (AIDriver && AIDriver->GetRecoveryCount() != LastAIRecoveries)
+	{
+		LastAIRecoveries = AIDriver->GetRecoveryCount();
+		AIExcludeUntil = Elapsed + 1.5;
+		bRecoveryTick = true;
+	}
+	const bool bMeasResetWindow = bResetDone && Elapsed > Task10Limits::ResetAt - 0.5 && Elapsed < Task10Limits::ResetAt + 1.5;
+	const bool bMeasAIWindow = Elapsed < AIExcludeUntil;
+	float TickCamP = 0.0f;
+	float TickPawnP = 0.0f;
+	float TickCamA = 0.0f;
+	float TickPawnA = 0.0f;
 	if (bInitRecorded && PlayerCam && AICam && AI)
 	{
-		CamPathP += FVector::Dist(PlayerCam->GetComponentLocation(), PrevCamP);
-		PawnPathP += FVector::Dist(Player->GetActorLocation(), PrevPawnP);
-		CamPathA += FVector::Dist(AICam->GetComponentLocation(), PrevCamA);
-		PawnPathA += FVector::Dist(AI->GetActorLocation(), PrevPawnA);
+		TickCamP = FVector::Dist(PlayerCam->GetComponentLocation(), PrevCamP);
+		TickPawnP = FVector::Dist(Player->GetActorLocation(), PrevPawnP);
+		TickCamA = FVector::Dist(AICam->GetComponentLocation(), PrevCamA);
+		TickPawnA = FVector::Dist(AI->GetActorLocation(), PrevPawnA);
+		CamPathP += TickCamP;
+		PawnPathP += TickPawnP;
+		CamPathA += TickCamA;
+		PawnPathA += TickPawnA;
 		PrevCamP = PlayerCam->GetComponentLocation();
 		PrevPawnP = Player->GetActorLocation();
 		PrevCamA = AICam->GetComponentLocation();
 		PrevPawnA = AI->GetActorLocation();
+		// Revised pop measurement: fixed pawn-travel windows, skipping
+		// ticks inside the existing exclusion periods. An excluded tick
+		// discards the partial window so no evaluated window can bridge
+		// an exclusion boundary; windows begin fresh afterward. Window
+		// size and cap are frozen contract thresholds.
+		if (!bMeasResetWindow && !bMeasAIWindow)
+		{
+			WinCamP += TickCamP;
+			WinPawnP += TickPawnP;
+			WinCamA += TickCamA;
+			WinPawnA += TickPawnA;
+			if (WinPawnP >= Task10Limits::PawnTravelWindowCm)
+			{
+				const float R = WinCamP / FMath::Max(WinPawnP, 1.0f);
+				WinRatioMaxP = FMath::Max(WinRatioMaxP, R);
+				WinCountP++;
+				WinCamP = 0.0f;
+				WinPawnP = 0.0f;
+			}
+			if (WinPawnA >= Task10Limits::PawnTravelWindowCm)
+			{
+				const float R = WinCamA / FMath::Max(WinPawnA, 1.0f);
+				WinRatioMaxA = FMath::Max(WinRatioMaxA, R);
+				WinCountA++;
+				WinCamA = 0.0f;
+				WinPawnA = 0.0f;
+			}
+		}
+		else
+		{
+			WinCamP = 0.0f;
+			WinPawnP = 0.0f;
+			WinCamA = 0.0f;
+			WinPawnA = 0.0f;
+		}
 	}
 
 	// Look-ahead sampling across turning samples.
@@ -255,18 +310,20 @@ void ATask10Probe::Tick(float Delta)
 	{
 		LeadSum += PlayerDriver->GetRelativeYaw() * FMath::Sign(Player->GetYawRate());
 		LeadN++;
+		// Heading traversed while eligible for turn sampling.
+		TurnArcDegSum += FMath::Abs(Player->GetYawRate()) * Delta;
 	}
 
 	// Per-tick displacement outside discontinuity windows (player reset
-	// and AI recovery respawns both snap by design).
-	if (AIDriver && AIDriver->GetRecoveryCount() != LastAIRecoveries)
+	// and AI recovery respawns both snap by design). Recovery bookkeeping
+	// runs above so window accumulation can share the exclusion state;
+	// the exclusion windows below are unchanged.
+	if (bRecoveryTick)
 	{
-		LastAIRecoveries = AIDriver->GetRecoveryCount();
-		AIExcludeUntil = Elapsed + 1.5;
 		UE_LOG(LogTemp, Display, TEXT("RACECAM10E2E: AI recovery %d, pop window excluded"), LastAIRecoveries);
 	}
-	const bool bInResetWindow = bResetDone && Elapsed > Task10Limits::ResetAt - 0.5 && Elapsed < Task10Limits::ResetAt + 1.5;
-	const bool bInAIWindow = Elapsed < AIExcludeUntil;
+	const bool bInResetWindow = bMeasResetWindow;
+	const bool bInAIWindow = bMeasAIWindow;
 	if (bHaveLast && !bInResetWindow && !bInAIWindow && PlayerCam && AICam)
 	{
 		MaxPopP = FMath::Max(MaxPopP, FVector::Dist(PlayerCam->GetComponentLocation(), LastCamP));
@@ -363,8 +420,15 @@ void ATask10Probe::WriteResults(bool bOk, const FString& Note) const
 	const bool bFollowP = (PawnPathP > 50.0) && (CamPathP > Task10Limits::FollowMinRatio * PawnPathP);
 	const bool bFollowA = (PawnPathA > 50.0) && (CamPathA > Task10Limits::FollowMinRatio * PawnPathA);
 	const double LeadMean = (LeadN > 0) ? (LeadSum / (double)LeadN) : 0.0;
-	const bool bLead = (LeadN > 100) && (LeadMean > Task10Limits::LeadMinDeg);
-	const bool bNoPops = bHaveLast && (MaxPopP < Task10Limits::PopMaxCm) && (MaxPopA < Task10Limits::PopMaxCm);
+	// Revised contract: mean plus turn-arc floor (frame-rate independent).
+	// The old LeadN sample-count floor is diagnostic only.
+	const bool bLead = (LeadMean > Task10Limits::LeadMinDeg) && (TurnArcDegSum >= Task10Limits::TurnArcFloorDeg);
+	// Revised contract: every evaluated window under the ratio cap, with
+	// at least one evaluated window per camera so the gate cannot pass
+	// vacuously. The old per-tick MaxPop criterion is diagnostic only.
+	const bool bNoPops = (WinCountP > 0) && (WinCountA > 0)
+		&& (WinRatioMaxP <= Task10Limits::WindowTravelRatioCap)
+		&& (WinRatioMaxA <= Task10Limits::WindowTravelRatioCap);
 	const bool bReset = bResetMeasured && (ResetPosErr >= 0.0f) && (ResetPosErr < Task10Limits::ResetMaxPosCm)
 		&& (ResetYawErr < Task10Limits::ResetMaxYawDeg);
 	const bool bRace = bRacingSeen;
@@ -374,11 +438,17 @@ void ATask10Probe::WriteResults(bool bOk, const FString& Note) const
 		TEXT("{\"follow_player\":%s,\"follow_ai\":%s,\"lookahead_lead\":%s,\"no_pops\":%s,\"reset_snap\":%s,\"race_compatible\":%s,")
 		TEXT("\"cam_travel_p\":%.1f,\"pawn_travel_p\":%.1f,\"cam_travel_a\":%.1f,\"pawn_travel_a\":%.1f,")
 		TEXT("\"lead_mean_deg\":%.2f,\"lead_samples\":%d,\"max_pop_p_cm\":%.2f,\"max_pop_a_cm\":%.2f,")
+		TEXT("\"turn_arc_deg\":%.1f,\"turn_arc_floor_deg\":%.1f,\"window_ratio_max\":%.2f,\"window_ratio_cap\":%.1f,\"window_count\":%d,")
+		TEXT("\"window_count_p\":%d,\"window_count_a\":%d,")
+		TEXT("\"window_ratio_max_p\":%.2f,\"window_ratio_max_a\":%.2f,")
 		TEXT("\"reset_pos_err_cm\":%.1f,\"reset_yaw_err_deg\":%.2f,\"frames\":%d,\"note\":\"%s\"}"),
 		bFollowP ? TEXT("true") : TEXT("false"), bFollowA ? TEXT("true") : TEXT("false"),
 		bLead ? TEXT("true") : TEXT("false"), bNoPops ? TEXT("true") : TEXT("false"),
 		bReset ? TEXT("true") : TEXT("false"), bRace ? TEXT("true") : TEXT("false"),
 		CamPathP, PawnPathP, CamPathA, PawnPathA, LeadMean, LeadN, MaxPopP, MaxPopA,
+		TurnArcDegSum, Task10Limits::TurnArcFloorDeg,
+		FMath::Max(WinRatioMaxP, WinRatioMaxA), Task10Limits::WindowTravelRatioCap,
+		WinCountP + WinCountA, WinCountP, WinCountA, WinRatioMaxP, WinRatioMaxA,
 		ResetPosErr, ResetYawErr, Frames, *Note);
 
 	const FString Dir = FPaths::ProjectSavedDir() + TEXT("Task10E2E/");
@@ -398,4 +468,6 @@ void ATask10Probe::WriteResults(bool bOk, const FString& Note) const
 	UE_LOG(LogTemp, Display, TEXT("RACECAM10E2E: manifest written with %d captures"), ShotEntries.Num());
 	UE_LOG(LogTemp, Display, TEXT("RACECAM10E2E: followP=%d followA=%d lead=%d pops=%d reset=%d race=%d all=%d"),
 		bFollowP, bFollowA, bLead, bNoPops, bReset, bRace, bAll);
+	UE_LOG(LogTemp, Display, TEXT("RACECAM10E2E: MEASURE turnarc=%.1f leadmean=%.2f leadn=%d winmaxP=%.2f wincntP=%d winmaxA=%.2f wincntA=%d"),
+		TurnArcDegSum, LeadMean, LeadN, WinRatioMaxP, WinCountP, WinRatioMaxA, WinCountA);
 }
