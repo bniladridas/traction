@@ -4,6 +4,8 @@
 #include "RaceMenuWidget.h"
 #include "RaceSelectWidget.h"
 #include "RaceSelectData.h"
+#include "RaceHudModel.h"
+#include "RaceHudWidget.h"
 #include "RaceTrack.h"
 #include "RaceManager.h"
 #include "RaceVehicle.h"
@@ -216,6 +218,65 @@ void ARaceGameMode::EnterDefaultRaceState()
 		Manager->StartRace();
 		UE_LOG(LogTemp, Display, TEXT("RACEGAME: default race started"));
 	}
+
+	// Production race HUD: model bound to the manager (sole authority),
+	// then the thin display shell. Same composition as the Task 17 test
+	// flow, minus the probe.
+	if (Manager)
+	{
+		HudModel = NewObject<URaceHudModel>(this);
+		HudModel->Init(Manager, FRaceHudConfig());
+		HudWidget = CreateWidget<URaceHudWidget>(GetWorld(), URaceHudWidget::StaticClass());
+		if (HudWidget)
+		{
+			HudWidget->BindModel(HudModel);
+			HudWidget->AddToViewport();
+		}
+		UE_LOG(LogTemp, Display, TEXT("RACEGAME: hud bound=%d widget=%d"),
+			HudModel->IsBound() ? 1 : 0, HudWidget != nullptr ? 1 : 0);
+	}
+
+	// Human input stays held until the manager reaches Racing. The AI
+	// already gates itself on the phase; this closes the same gate for
+	// the player without giving the vehicle a manager dependency.
+	if (APawn* Pawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0))
+	{
+		if (APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0))
+		{
+			Pawn->DisableInput(PC);
+			UE_LOG(LogTemp, Display, TEXT("RACEGAME: input held until green"));
+		}
+	}
+	bInputReleased = false;
+	bLoggedCountdown = false;
+	TWeakObjectPtr<ARaceManager> WeakManager(Manager);
+	GetWorldTimerManager().SetTimer(GreenPollHandle, [this, WeakManager]()
+	{
+		if (!WeakManager.IsValid())
+		{
+			return;
+		}
+		const ERacePhase Phase = WeakManager->GetPhase();
+		if (!bLoggedCountdown && Phase == ERacePhase::Countdown)
+		{
+			bLoggedCountdown = true;
+			UE_LOG(LogTemp, Display, TEXT("RACEGAME: countdown observed T-%.1f"),
+				WeakManager->GetCountdownRemaining());
+		}
+		if (!bInputReleased && Phase == ERacePhase::Racing)
+		{
+			bInputReleased = true;
+			if (APawn* Pawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0))
+			{
+				if (APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0))
+				{
+					Pawn->EnableInput(PC);
+				}
+			}
+			UE_LOG(LogTemp, Display, TEXT("RACEGAME: input enabled at Racing"));
+			GetWorldTimerManager().ClearTimer(GreenPollHandle);
+		}
+	}, 0.1f, true);
 
 	if (APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0))
 	{

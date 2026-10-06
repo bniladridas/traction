@@ -55,4 +55,16 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<URaceSelectWidget> SelectWidget = nullptr;
+
+	// Production race HUD (PR3): model bound to the manager plus the thin
+	// display shell. Created at race setup; the shell shows the countdown.
+	UPROPERTY()
+	TObjectPtr<class URaceHudModel> HudModel = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<class URaceHudWidget> HudWidget = nullptr;
+
+	FTimerHandle GreenPollHandle;
+	bool bInputReleased = false;
+	bool bLoggedCountdown = false;
 };

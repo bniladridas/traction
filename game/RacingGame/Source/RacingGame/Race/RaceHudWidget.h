@@ -12,6 +12,9 @@
 #include "RaceHudModel.h"
 #include "RaceHudWidget.generated.h"
 
+class UTextBlock;
+class SWidget;
+
 UCLASS()
 class RACINGGAME_API URaceHudWidget : public UUserWidget
 {
@@ -24,11 +27,22 @@ public:
 
 	URaceHudModel* GetModel() const { return Model; }
 
+	// Builds the display tree on first slate build (same engine constraint
+	// as the menu widgets: the root must exist before the first build
+	// resolves it). Currently binds the countdown text only; lap/position
+	// bindings belong to later HUD work.
+	virtual TSharedRef<SWidget> RebuildWidget() override;
+
 protected:
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
 private:
+	void BuildDisplayTree();
+
 	UPROPERTY()
 	TObjectPtr<URaceHudModel> Model = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<UTextBlock> CountdownText = nullptr;
 	float Accumulator = 0.0f;
 };
