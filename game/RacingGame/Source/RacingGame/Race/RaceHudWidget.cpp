@@ -21,6 +21,19 @@ void URaceHudWidget::BuildDisplayTree()
 	UCanvasPanel* Root = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass());
 	WidgetTree->RootWidget = Root;
 
+	auto AddCornerText = [this](UCanvasPanel* Parent, float X, float Y, float AlignX, TObjectPtr<UTextBlock>& Out)
+	{
+		Out = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
+		Out->SetJustification(ETextJustify::Center);
+		if (UCanvasPanelSlot* Slot = Parent->AddChildToCanvas(Out))
+		{
+			Slot->SetAnchors(FAnchors(X, Y, X, Y));
+			Slot->SetAlignment(FVector2D(AlignX, 0.0f));
+			Slot->SetAutoSize(true);
+		}
+		Out->SetVisibility(ESlateVisibility::Collapsed);
+	};
+
 	CountdownText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
 	CountdownText->SetJustification(ETextJustify::Center);
 	if (UCanvasPanelSlot* Slot = Root->AddChildToCanvas(CountdownText))
@@ -30,6 +43,19 @@ void URaceHudWidget::BuildDisplayTree()
 		Slot->SetAutoSize(true);
 	}
 	CountdownText->SetVisibility(ESlateVisibility::Collapsed);
+
+	AddCornerText(Root, 0.0f, 0.0f, 0.0f, LapText);
+	AddCornerText(Root, 1.0f, 0.0f, 1.0f, PositionText);
+
+	FinishText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
+	FinishText->SetJustification(ETextJustify::Center);
+	if (UCanvasPanelSlot* FinishSlot = Root->AddChildToCanvas(FinishText))
+	{
+		FinishSlot->SetAnchors(FAnchors(0.5f, 0.5f, 0.5f, 0.5f));
+		FinishSlot->SetAlignment(FVector2D(0.5f, 0.5f));
+		FinishSlot->SetAutoSize(true);
+	}
+	FinishText->SetVisibility(ESlateVisibility::Collapsed);
 }
 
 void URaceHudWidget::BindModel(URaceHudModel* InModel)
@@ -57,12 +83,18 @@ void URaceHudWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 		Accumulator = 0.0f;
 		Model->Refresh();
 	}
-	if (CountdownText)
+	auto BindField = [](TObjectPtr<UTextBlock> Block, const FString& Text)
 	{
-		const FString Text = Model->GetCountdownText();
-		CountdownText->SetText(FText::FromString(Text));
-		CountdownText->SetVisibility(Text.IsEmpty()
-			? ESlateVisibility::Collapsed
-			: ESlateVisibility::HitTestInvisible);
-	}
+		if (Block)
+		{
+			Block->SetText(FText::FromString(Text));
+			Block->SetVisibility(Text.IsEmpty()
+				? ESlateVisibility::Collapsed
+				: ESlateVisibility::HitTestInvisible);
+		}
+	};
+	BindField(CountdownText, Model->GetCountdownText());
+	BindField(LapText, Model->GetLapText());
+	BindField(PositionText, Model->GetPositionText());
+	BindField(FinishText, Model->GetFinishText());
 }

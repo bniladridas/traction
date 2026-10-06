@@ -181,12 +181,20 @@ void ARaceGameMode::EnterDefaultRaceState()
 		Manager = GetWorld()->SpawnActor<ARaceManager>(ARaceManager::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, P);
 	}
 
+	// Grid from the track's slot table (PR4): the player takes a rear slot
+	// and the AI takes pole, so neither starts inside the other's launch
+	// corridor. Parking the player at the lone start pose put it in the
+	// AI's path and wedged every headless run; table slots carry an
+	// offline pairwise-clearance proof.
 	if (Track)
 	{
+		FVector PlayerLoc;
+		float PlayerYaw = 0.0f;
+		Track->GetGridPose(3, PlayerLoc, PlayerYaw);
 		if (APawn* Pawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0))
 		{
-			Pawn->SetActorLocationAndRotation(Track->GetStartPosition(),
-				FRotator(0.0f, Track->GetStartYawDeg(), 0.0f), false, nullptr, ETeleportType::TeleportPhysics);
+			Pawn->SetActorLocationAndRotation(PlayerLoc,
+				FRotator(0.0f, PlayerYaw, 0.0f), false, nullptr, ETeleportType::TeleportPhysics);
 			if (Cars.Num() > 0)
 			{
 				if (ARaceVehicle* Vehicle = Cast<ARaceVehicle>(Pawn))
@@ -201,14 +209,13 @@ void ARaceGameMode::EnterDefaultRaceState()
 
 	if (Track && Manager)
 	{
-		const FRaceTrackCenterPoint Grid = Track->SampleAtDistance(200.0f);
-		const FVector Right(-Grid.Forward.Y, Grid.Forward.X, 0.0f);
-		const FVector GridPos = Grid.Position - Right * 200.0f + FVector(0.0f, 0.0f, 60.0f);
-		const float GridYaw = FMath::RadiansToDegrees(FMath::Atan2(Grid.Forward.Y, Grid.Forward.X));
+		FVector AILoc;
+		float AIYaw = 0.0f;
+		Track->GetGridPose(0, AILoc, AIYaw);
 		FActorSpawnParameters P;
 		P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		if (ARaceVehicle* AI = GetWorld()->SpawnActor<ARaceVehicle>(ARaceVehicle::StaticClass(), GridPos,
-			FRotator(0.0f, GridYaw, 0.0f), P))
+		if (ARaceVehicle* AI = GetWorld()->SpawnActor<ARaceVehicle>(ARaceVehicle::StaticClass(), AILoc,
+			FRotator(0.0f, AIYaw, 0.0f), P))
 		{
 			URaceAIDriver* Driver = NewObject<URaceAIDriver>(AI, TEXT("AIDriver"));
 			Driver->RegisterComponent();
