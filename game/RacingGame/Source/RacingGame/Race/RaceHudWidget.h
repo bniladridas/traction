@@ -29,8 +29,8 @@ public:
 
 	// Builds the display tree on first slate build (same engine constraint
 	// as the menu widgets: the root must exist before the first build
-	// resolves it). Currently binds the countdown text only; lap/position
-	// bindings belong to later HUD work.
+	// resolves it). Binds countdown, lap, position, and finish texts;
+	// all values come from the model, never computed here.
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 
 protected:
@@ -44,5 +44,14 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UTextBlock> CountdownText = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<UTextBlock> LapText = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<UTextBlock> PositionText = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<UTextBlock> FinishText = nullptr;
 	float Accumulator = 0.0f;
 };
