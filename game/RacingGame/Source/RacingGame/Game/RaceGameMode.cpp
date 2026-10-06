@@ -155,9 +155,6 @@ void ARaceGameMode::EnterMenuState()
 
 void ARaceGameMode::EnterDefaultRaceState()
 {
-	const TArray<FRaceCarPreset> Cars = GetRaceCarPresets();
-	const int32 SafeCar = Cars.Num() > 0 ? FMath::Clamp(SelectedCar, 0, Cars.Num() - 1) : 0;
-
 	ARaceTrack* Track = nullptr;
 	for (TActorIterator<ARaceTrack> It(GetWorld()); It; ++It)
 	{
@@ -169,6 +166,7 @@ void ARaceGameMode::EnterDefaultRaceState()
 		P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		Track = GetWorld()->SpawnActor<ARaceTrack>(ARaceTrack::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, P);
 	}
+	RaceTrack = Track;
 
 	ARaceManager* Manager = nullptr;
 	for (TActorIterator<ARaceManager> It(GetWorld()); It; ++It)
@@ -181,34 +179,9 @@ void ARaceGameMode::EnterDefaultRaceState()
 		P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		Manager = GetWorld()->SpawnActor<ARaceManager>(ARaceManager::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, P);
 	}
+	RaceManager = Manager;
 
-	// Grid from the track's slot table (PR4): the player takes a rear slot
-	// and the AI takes pole, so neither starts inside the other's launch
-	// corridor. Parking the player at the lone start pose put it in the
-	// AI's path and wedged every headless run; table slots carry an
-	// offline pairwise-clearance proof.
-	if (Track)
-	{
-		FVector PlayerLoc;
-		float PlayerYaw = 0.0f;
-		Track->GetGridPose(3, PlayerLoc, PlayerYaw);
-		if (APawn* Pawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0))
-		{
-			Pawn->SetActorLocationAndRotation(PlayerLoc,
-				FRotator(0.0f, PlayerYaw, 0.0f), false, nullptr, ETeleportType::TeleportPhysics);
-			if (Cars.Num() > 0)
-			{
-				if (ARaceVehicle* Vehicle = Cast<ARaceVehicle>(Pawn))
-				{
-					Vehicle->SetVehicleConfig(Cars[SafeCar].Config);
-					UE_LOG(LogTemp, Display, TEXT("RACEGAME: car preset applied %s mass=%.0f finaldrive=%.2f"),
-						*Cars[SafeCar].Name, Cars[SafeCar].Config.MassKg, Cars[SafeCar].Config.FinalDriveRatio);
-				}
-			}
-		}
-	}
-
-	if (Track && Manager)
+	if (Track && RaceManager)
 	{
 		FVector AILoc;
 		float AIYaw = 0.0f;
@@ -220,20 +193,20 @@ void ARaceGameMode::EnterDefaultRaceState()
 		{
 			URaceAIDriver* Driver = NewObject<URaceAIDriver>(AI, TEXT("AIDriver"));
 			Driver->RegisterComponent();
-			Manager->RegisterParticipant(AI);
+			RaceManager->RegisterParticipant(AI);
+			AIVehicle = AI;
+			AIDriver = Driver;
 			UE_LOG(LogTemp, Display, TEXT("RACEGAME: default AI spawned"));
 		}
-		Manager->StartRace();
-		UE_LOG(LogTemp, Display, TEXT("RACEGAME: default race started"));
 	}
 
 	// Production race HUD: model bound to the manager (sole authority),
 	// then the thin display shell. Same composition as the Task 17 test
 	// flow, minus the probe.
-	if (Manager)
+	if (RaceManager)
 	{
 		HudModel = NewObject<URaceHudModel>(this);
-		HudModel->Init(Manager, FRaceHudConfig());
+		HudModel->Init(RaceManager, FRaceHudConfig());
 		HudWidget = CreateWidget<URaceHudWidget>(GetWorld(), URaceHudWidget::StaticClass());
 		if (HudWidget)
 		{
@@ -243,6 +216,78 @@ void ARaceGameMode::EnterDefaultRaceState()
 		UE_LOG(LogTemp, Display, TEXT("RACEGAME: hud bound=%d widget=%d"),
 			HudModel->IsBound() ? 1 : 0, HudWidget != nullptr ? 1 : 0);
 	}
+
+	SeatCars();
+	ArmRaceStart();
+
+	if (APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0))
+	{
+		PC->SetInputMode(FInputModeGameOnly());
+		PC->bShowMouseCursor = false;
+	}
+}
+
+void ARaceGameMode::SeatCars()
+{
+	if (!RaceTrack)
+	{
+		return;
+	}
+	const TArray<FRaceCarPreset> Cars = GetRaceCarPresets();
+	const int32 SafeCar = Cars.Num() > 0 ? FMath::Clamp(SelectedCar, 0, Cars.Num() - 1) : 0;
+
+	// Grid from the track's slot table (PR4): the player takes a rear slot
+	// and the AI takes pole, so neither starts inside the other's launch
+	// corridor. Parking the player at the lone start pose put it in the
+	// AI's path and wedged every headless run; table slots carry an
+	// offline pairwise-clearance proof.
+	FVector PlayerLoc;
+	float PlayerYaw = 0.0f;
+	RaceTrack->GetGridPose(3, PlayerLoc, PlayerYaw);
+	if (APawn* Pawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0))
+	{
+		Pawn->SetActorLocationAndRotation(PlayerLoc,
+			FRotator(0.0f, PlayerYaw, 0.0f), false, nullptr, ETeleportType::TeleportPhysics);
+		if (Cars.Num() > 0)
+		{
+			if (ARaceVehicle* Vehicle = Cast<ARaceVehicle>(Pawn))
+			{
+				Vehicle->SetVehicleConfig(Cars[SafeCar].Config);
+				Vehicle->ResetMotion();
+				UE_LOG(LogTemp, Display, TEXT("RACEGAME: car preset applied %s mass=%.0f finaldrive=%.2f"),
+					*Cars[SafeCar].Name, Cars[SafeCar].Config.MassKg, Cars[SafeCar].Config.FinalDriveRatio);
+			}
+		}
+	}
+
+	if (AIVehicle)
+	{
+		FVector AILoc;
+		float AIYaw = 0.0f;
+		RaceTrack->GetGridPose(0, AILoc, AIYaw);
+		AIVehicle->SetActorLocationAndRotation(AILoc,
+			FRotator(0.0f, AIYaw, 0.0f), false, nullptr, ETeleportType::TeleportPhysics);
+		AIVehicle->ResetMotion();
+		if (AIDriver)
+		{
+			AIDriver->ResetRacecraft();
+		}
+		if (RaceManager)
+		{
+			RaceManager->ReanchorParticipant(AIVehicle);
+		}
+	}
+}
+
+void ARaceGameMode::ArmRaceStart()
+{
+	if (!RaceManager)
+	{
+		return;
+	}
+	++RaceNumber;
+	RaceManager->StartRace();
+	UE_LOG(LogTemp, Display, TEXT("RACEGAME: race %d started"), RaceNumber);
 
 	// Human input stays held until the manager reaches Racing. The AI
 	// already gates itself on the phase; this closes the same gate for
@@ -258,7 +303,7 @@ void ARaceGameMode::EnterDefaultRaceState()
 	bInputReleased = false;
 	bLoggedCountdown = false;
 	bResultsShown = false;
-	TWeakObjectPtr<ARaceManager> WeakManager(Manager);
+	TWeakObjectPtr<ARaceManager> WeakManager(RaceManager);
 	GetWorldTimerManager().SetTimer(GreenPollHandle, [this, WeakManager]()
 	{
 		if (!WeakManager.IsValid())
@@ -290,7 +335,7 @@ void ARaceGameMode::EnterDefaultRaceState()
 	// Results screen appears once the manager finalizes results, even if
 	// parked participants never finish: the table covers finishers only
 	// by manager design, so headless runs still exercise this path.
-	TWeakObjectPtr<ARaceManager> WeakResultsManager(Manager);
+	TWeakObjectPtr<ARaceManager> WeakResultsManager(RaceManager);
 	GetWorldTimerManager().SetTimer(ResultsPollHandle, [this, WeakResultsManager]()
 	{
 		if (bResultsShown || !WeakResultsManager.IsValid() || !WeakResultsManager->HasResults())
@@ -308,12 +353,51 @@ void ARaceGameMode::EnterDefaultRaceState()
 			ResultsWidget->AddToViewport(200);
 			ResultsWidget->ShowResults(WeakResultsManager.Get());
 		}
+		const FRaceResults& Snapshot = WeakResultsManager->GetResults();
+		float Best = -1.0f;
+		for (const FRaceResultEntry& E : Snapshot.Ordered)
+		{
+			Best = (Best < 0.0f) ? E.BestLapTime : FMath::Min(Best, E.BestLapTime);
+		}
+		if (RaceNumber <= 1)
+		{
+			FirstBestTime = Best;
+			FirstEntries = Snapshot.Ordered.Num();
+		}
+		else
+		{
+			UE_LOG(LogTemp, Display, TEXT("RACEGAME: independence race1 best=%.2f entries=%d race%d best=%.2f entries=%d"),
+				FirstBestTime, FirstEntries, RaceNumber, Best, Snapshot.Ordered.Num());
+		}
+		// -RaceAutoRestart runs exactly one restart: first results lead to
+		// race 2, whose results end the headless program.
+		if (RaceNumber <= 1 && FParse::Param(FCommandLine::Get(), TEXT("RaceAutoRestart")))
+		{
+			FTimerHandle RestartH;
+			GetWorldTimerManager().SetTimer(RestartH, [this]() { RestartRace(); }, 5.0f, false);
+			UE_LOG(LogTemp, Display, TEXT("RACEGAME: autorestart armed"));
+		}
 		GetWorldTimerManager().ClearTimer(ResultsPollHandle);
 	}, 0.5f, true);
+}
 
-	if (APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0))
+void ARaceGameMode::RestartRace()
+{
+	if (!RaceManager)
 	{
-		PC->SetInputMode(FInputModeGameOnly());
-		PC->bShowMouseCursor = false;
+		return;
 	}
+	UE_LOG(LogTemp, Display, TEXT("RACEGAME: restart requested"));
+	RaceManager->OnVehicleReset();
+	if (ResultsWidget)
+	{
+		ResultsWidget->RemoveFromParent();
+		ResultsWidget = nullptr;
+	}
+	if (HudWidget)
+	{
+		HudWidget->AddToViewport();
+	}
+	SeatCars();
+	ArmRaceStart();
 }

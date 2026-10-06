@@ -13,6 +13,10 @@
 
 class URaceMenuWidget;
 class URaceSelectWidget;
+class ARaceTrack;
+class ARaceManager;
+class ARaceVehicle;
+class URaceAIDriver;
 
 UCLASS()
 class RACINGGAME_API ARaceGameMode : public AGameModeBase
@@ -31,6 +35,12 @@ public:
 	void OpenMenu();
 	void OpenSelection();
 	void StartSelectedRace(int32 CarIdx, int32 TrackIdx);
+
+	// Restart flow (PR6): clean new race through the production flow.
+	// Resets manager, cars, AI, widgets, and mode flags, then re-arms the
+	// same start sequence. Called by the results Restart button and by
+	// -RaceAutoRestart headlessly.
+	void RestartRace();
 
 	// Menu action: quit the game.
 	void QuitGame();
@@ -75,4 +85,33 @@ private:
 
 	FTimerHandle ResultsPollHandle;
 	bool bResultsShown = false;
+
+	// Production race actors, owned across restarts within one map load.
+	UPROPERTY()
+	TObjectPtr<ARaceTrack> RaceTrack = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<ARaceManager> RaceManager = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<ARaceVehicle> AIVehicle = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<URaceAIDriver> AIDriver = nullptr;
+
+	// Race numbering and first-race summary for the independence check:
+	// the second snapshot must stand on its own, not continue the first.
+	int32 RaceNumber = 0;
+	float FirstBestTime = -1.0f;
+	int32 FirstEntries = 0;
+
+	// Seats player and AI on grid slots (shared by initial setup and
+	// restart). Re-seating after OnVehicleReset is what keeps restarted
+	// races on the proven-clear grid instead of drifting.
+	void SeatCars();
+
+	// Starts one race: manager StartRace, input hold, transition and
+	// results polls, per-race flag resets. Shared by initial setup and
+	// restart so both enter through the same sequence.
+	void ArmRaceStart();
 };

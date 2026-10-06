@@ -29,6 +29,10 @@ public:
 	// manager reports HasResults; entries never change afterward.
 	void ShowResults(ARaceManager* Manager);
 
+protected:
+	UFUNCTION()
+	void OnRestart();
+
 private:
 	void BuildResultsTree();
 
