@@ -23,10 +23,6 @@ public:
 	// be drawn (cached empty spacer, no error).
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 
-	// Invokes the Start action. Called by the Start button; the headless
-	// autostart path calls this same function so both exercise one handler.
-	void PressStart();
-
 	// Slate widget to focus when the menu is shown (the Start button,
 	// so gamepad/keyboard input lands somewhere focusable).
 	TSharedPtr<SWidget> GetFocusTarget() const;

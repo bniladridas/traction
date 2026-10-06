@@ -72,15 +72,10 @@ void URaceMenuWidget::BuildMenuTree()
 
 void URaceMenuWidget::OnStartClicked()
 {
-	PressStart();
-}
-
-void URaceMenuWidget::PressStart()
-{
 	UE_LOG(LogTemp, Display, TEXT("RACEGAME: Start pressed"));
 	if (ARaceGameMode* Mode = Cast<ARaceGameMode>(UGameplayStatics::GetGameMode(this)))
 	{
-		Mode->StartDefaultRace();
+		Mode->OpenSelection();
 	}
 }
 
