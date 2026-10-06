@@ -67,4 +67,12 @@ private:
 	FTimerHandle GreenPollHandle;
 	bool bInputReleased = false;
 	bool bLoggedCountdown = false;
+
+	// Results screen (PR5): shown once when the manager finalizes results.
+	// Display-only; restart flow belongs to PR6.
+	UPROPERTY()
+	TObjectPtr<class URaceResultsWidget> ResultsWidget = nullptr;
+
+	FTimerHandle ResultsPollHandle;
+	bool bResultsShown = false;
 };
