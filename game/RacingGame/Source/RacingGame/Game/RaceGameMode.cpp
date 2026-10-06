@@ -4,6 +4,7 @@
 #include "RaceMenuWidget.h"
 #include "RaceSelectWidget.h"
 #include "RaceSelectData.h"
+#include "RaceResultsWidget.h"
 #include "RaceHudModel.h"
 #include "RaceHudWidget.h"
 #include "RaceTrack.h"
@@ -256,6 +257,7 @@ void ARaceGameMode::EnterDefaultRaceState()
 	}
 	bInputReleased = false;
 	bLoggedCountdown = false;
+	bResultsShown = false;
 	TWeakObjectPtr<ARaceManager> WeakManager(Manager);
 	GetWorldTimerManager().SetTimer(GreenPollHandle, [this, WeakManager]()
 	{
@@ -284,6 +286,30 @@ void ARaceGameMode::EnterDefaultRaceState()
 			GetWorldTimerManager().ClearTimer(GreenPollHandle);
 		}
 	}, 0.1f, true);
+
+	// Results screen appears once the manager finalizes results, even if
+	// parked participants never finish: the table covers finishers only
+	// by manager design, so headless runs still exercise this path.
+	TWeakObjectPtr<ARaceManager> WeakResultsManager(Manager);
+	GetWorldTimerManager().SetTimer(ResultsPollHandle, [this, WeakResultsManager]()
+	{
+		if (bResultsShown || !WeakResultsManager.IsValid() || !WeakResultsManager->HasResults())
+		{
+			return;
+		}
+		bResultsShown = true;
+		if (HudWidget)
+		{
+			HudWidget->RemoveFromParent();
+		}
+		if (URaceResultsWidget* Results = CreateWidget<URaceResultsWidget>(GetWorld(), URaceResultsWidget::StaticClass()))
+		{
+			ResultsWidget = Results;
+			ResultsWidget->AddToViewport(200);
+			ResultsWidget->ShowResults(WeakResultsManager.Get());
+		}
+		GetWorldTimerManager().ClearTimer(ResultsPollHandle);
+	}, 0.5f, true);
 
 	if (APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0))
 	{
