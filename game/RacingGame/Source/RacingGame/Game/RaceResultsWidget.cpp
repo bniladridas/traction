@@ -1,13 +1,16 @@
 // See header.
 
 #include "RaceResultsWidget.h"
+#include "RaceGameMode.h"
 #include "RaceManager.h"
 #include "Blueprint/WidgetTree.h"
+#include "Components/Button.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
+#include "Kismet/GameplayStatics.h"
 
 TSharedRef<SWidget> URaceResultsWidget::RebuildWidget()
 {
@@ -42,6 +45,17 @@ void URaceResultsWidget::BuildResultsTree()
 	RowsBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass());
 	Box->AddChildToVerticalBox(RowsBox);
 
+	UButton* RestartButton = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass());
+	UTextBlock* RestartLabel = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
+	RestartLabel->SetText(FText::FromString(TEXT("Restart")));
+	RestartLabel->SetJustification(ETextJustify::Center);
+	RestartButton->AddChild(RestartLabel);
+	RestartButton->OnClicked.AddDynamic(this, &URaceResultsWidget::OnRestart);
+	if (UVerticalBoxSlot* RestartSlot = Box->AddChildToVerticalBox(RestartButton))
+	{
+		RestartSlot->SetPadding(FMargin(0.0f, 24.0f, 0.0f, 0.0f));
+	}
+
 	UE_LOG(LogTemp, Display, TEXT("RACEGAME: results widget constructed"));
 }
 
@@ -68,4 +82,13 @@ void URaceResultsWidget::ShowResults(ARaceManager* Manager)
 		UE_LOG(LogTemp, Display, TEXT("RACEGAME: results row %s"), *Line);
 	}
 	UE_LOG(LogTemp, Display, TEXT("RACEGAME: results shown entries=%d"), Snapshot.Ordered.Num());
+}
+
+void URaceResultsWidget::OnRestart()
+{
+	UE_LOG(LogTemp, Display, TEXT("RACEGAME: Restart pressed"));
+	if (ARaceGameMode* Mode = Cast<ARaceGameMode>(UGameplayStatics::GetGameMode(this)))
+	{
+		Mode->RestartRace();
+	}
 }
