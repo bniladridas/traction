@@ -2,6 +2,8 @@
 
 #include "RaceGameMode.h"
 #include "RaceMenuWidget.h"
+#include "RaceSelectWidget.h"
+#include "RaceSelectData.h"
 #include "RaceTrack.h"
 #include "RaceManager.h"
 #include "RaceVehicle.h"
@@ -13,14 +15,16 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "TimerManager.h"
 
-namespace
-{
-	const TCHAR* CircuitMapPath = TEXT("/Game/Track/Track1_TestCircuit");
-}
-
 ARaceGameMode::ARaceGameMode()
 {
 	DefaultPawnClass = ARaceVehicle::StaticClass();
+}
+
+void ARaceGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
+{
+	Super::InitGame(MapName, Options, ErrorMessage);
+	FParse::Value(*Options, TEXT("car="), SelectedCar);
+	FParse::Value(*Options, TEXT("track="), SelectedTrack);
 }
 
 void ARaceGameMode::BeginPlay()
@@ -38,10 +42,52 @@ void ARaceGameMode::BeginPlay()
 	}
 }
 
-void ARaceGameMode::StartDefaultRace()
+void ARaceGameMode::OpenMenu()
 {
-	UE_LOG(LogTemp, Display, TEXT("RACEGAME: loading circuit under production mode"));
-	UGameplayStatics::OpenLevel(GetWorld(), CircuitMapPath, true, TEXT("game=/Script/RacingGame.RaceGameMode"));
+	if (SelectWidget)
+	{
+		SelectWidget->RemoveFromParent();
+		SelectWidget = nullptr;
+	}
+	EnterMenuState();
+}
+
+void ARaceGameMode::OpenSelection()
+{
+	UE_LOG(LogTemp, Display, TEXT("RACEGAME: selection opened"));
+	if (MenuWidget)
+	{
+		MenuWidget->RemoveFromParent();
+		MenuWidget = nullptr;
+	}
+	if (URaceSelectWidget* Select = CreateWidget<URaceSelectWidget>(GetWorld(), URaceSelectWidget::StaticClass()))
+	{
+		SelectWidget = Select;
+		SelectWidget->AddToViewport(100);
+		if (APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0))
+		{
+			FInputModeUIOnly InputMode;
+			if (TSharedPtr<SWidget> Focus = SelectWidget->GetFocusTarget())
+			{
+				InputMode.SetWidgetToFocus(Focus.ToSharedRef());
+			}
+			PC->SetInputMode(InputMode);
+			PC->bShowMouseCursor = true;
+		}
+		UE_LOG(LogTemp, Display, TEXT("RACEGAME: selection shown"));
+	}
+}
+
+void ARaceGameMode::StartSelectedRace(int32 CarIdx, int32 TrackIdx)
+{
+	const TArray<FRaceTrackEntry> Tracks = GetRaceTrackEntries();
+	const int32 SafeTrack = Tracks.Num() > 0 ? FMath::Clamp(TrackIdx, 0, Tracks.Num() - 1) : 0;
+	const FString MapPath = Tracks.Num() > 0 ? Tracks[SafeTrack].MapPath : TEXT("/Game/Track/Track1_TestCircuit");
+	UE_LOG(LogTemp, Display, TEXT("RACEGAME: loading %s under production mode (car=%d track=%d)"),
+		*MapPath, CarIdx, SafeTrack);
+	const FString URLOptions = FString::Printf(TEXT("game=/Script/RacingGame.RaceGameMode?car=%d?track=%d"),
+		CarIdx, SafeTrack);
+	UGameplayStatics::OpenLevel(GetWorld(), FName(*MapPath), true, URLOptions);
 }
 
 void ARaceGameMode::QuitGame()
@@ -56,14 +102,14 @@ bool ARaceGameMode::IsRaceMap() const
 
 void ARaceGameMode::EnterMenuState()
 {
-	URaceMenuWidget* Menu = CreateWidget<URaceMenuWidget>(GetWorld(), URaceMenuWidget::StaticClass());
-	if (Menu)
+	MenuWidget = CreateWidget<URaceMenuWidget>(GetWorld(), URaceMenuWidget::StaticClass());
+	if (MenuWidget)
 	{
-		Menu->AddToViewport(100);
+		MenuWidget->AddToViewport(100);
 		if (APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0))
 		{
 			FInputModeUIOnly InputMode;
-			if (TSharedPtr<SWidget> Focus = Menu->GetFocusTarget())
+			if (TSharedPtr<SWidget> Focus = MenuWidget->GetFocusTarget())
 			{
 				InputMode.SetWidgetToFocus(Focus.ToSharedRef());
 			}
@@ -74,25 +120,41 @@ void ARaceGameMode::EnterMenuState()
 	}
 
 	// Headless verification path (mirrors the probe -Task10Shots pattern):
-	// -RaceAutoStart invokes the widget's Start handler without a click,
-	// so the button and the headless path exercise one function.
+	// -RaceAutoStart starts the selected race without clicks, through the
+	// same StartSelectedRace the Confirm button uses. Optional
+	// -RaceAutoCar=N and -RaceAutoTrack=M choose the entries.
 	if (FParse::Param(FCommandLine::Get(), TEXT("RaceAutoStart")))
 	{
-		TWeakObjectPtr<URaceMenuWidget> WeakMenu(Menu);
+		int32 AutoCar = 0;
+		int32 AutoTrack = 0;
+		FParse::Value(FCommandLine::Get(), TEXT("RaceAutoCar="), AutoCar);
+		FParse::Value(FCommandLine::Get(), TEXT("RaceAutoTrack="), AutoTrack);
 		FTimerHandle H;
-		GetWorldTimerManager().SetTimer(H, [WeakMenu]()
+		GetWorldTimerManager().SetTimer(H, [this, AutoCar, AutoTrack]()
 		{
-			if (WeakMenu.IsValid())
-			{
-				WeakMenu->PressStart();
-			}
+			StartSelectedRace(AutoCar, AutoTrack);
 		}, 2.0f, false);
-		UE_LOG(LogTemp, Display, TEXT("RACEGAME: autostart armed"));
+		UE_LOG(LogTemp, Display, TEXT("RACEGAME: autostart armed car=%d track=%d"), AutoCar, AutoTrack);
+	}
+
+	// -RaceAutoSelect opens the selection screen without starting a race,
+	// evidencing the menu-to-selection transition headlessly.
+	if (FParse::Param(FCommandLine::Get(), TEXT("RaceAutoSelect")))
+	{
+		FTimerHandle SelH;
+		GetWorldTimerManager().SetTimer(SelH, [this]()
+		{
+			OpenSelection();
+		}, 2.0f, false);
+		UE_LOG(LogTemp, Display, TEXT("RACEGAME: autoselect armed"));
 	}
 }
 
 void ARaceGameMode::EnterDefaultRaceState()
 {
+	const TArray<FRaceCarPreset> Cars = GetRaceCarPresets();
+	const int32 SafeCar = Cars.Num() > 0 ? FMath::Clamp(SelectedCar, 0, Cars.Num() - 1) : 0;
+
 	ARaceTrack* Track = nullptr;
 	for (TActorIterator<ARaceTrack> It(GetWorld()); It; ++It)
 	{
@@ -123,6 +185,15 @@ void ARaceGameMode::EnterDefaultRaceState()
 		{
 			Pawn->SetActorLocationAndRotation(Track->GetStartPosition(),
 				FRotator(0.0f, Track->GetStartYawDeg(), 0.0f), false, nullptr, ETeleportType::TeleportPhysics);
+			if (Cars.Num() > 0)
+			{
+				if (ARaceVehicle* Vehicle = Cast<ARaceVehicle>(Pawn))
+				{
+					Vehicle->SetVehicleConfig(Cars[SafeCar].Config);
+					UE_LOG(LogTemp, Display, TEXT("RACEGAME: car preset applied %s mass=%.0f finaldrive=%.2f"),
+						*Cars[SafeCar].Name, Cars[SafeCar].Config.MassKg, Cars[SafeCar].Config.FinalDriveRatio);
+				}
+			}
 		}
 	}
 

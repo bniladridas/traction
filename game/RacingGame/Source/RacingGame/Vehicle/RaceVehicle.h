@@ -60,6 +60,10 @@ public:
 	// variant assigns different values here without new classes.
 	const FRaceVehicleConfig& GetVehicleConfig() const { return VehicleConfig; }
 
+	// Assigns a new configuration and re-pushes it through the same path
+	// BeginPlay uses, so selection-time changes take effect on a live pawn.
+	void SetVehicleConfig(const FRaceVehicleConfig& InConfig);
+
 	// Read-only view of what the movement actually consumed.
 	const FRaceVehicleConfig& GetActiveConfig() const;
 

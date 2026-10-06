@@ -74,6 +74,14 @@ void ARaceVehicle::SetCameraConfig(const FRaceCameraConfig& Config)
 	ApplyCameraBlock();
 }
 
+void ARaceVehicle::SetVehicleConfig(const FRaceVehicleConfig& InConfig)
+{
+	VehicleConfig = InConfig;
+	VehicleMovement->ApplyConfig(VehicleConfig);
+	Drivetrain->ApplyConfig(VehicleConfig);
+	ApplyCameraBlock();
+}
+
 void ARaceVehicle::ApplyCameraBlock()
 {
 	if (ChaseCamDriver)
