@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on: runzumi-ubuntu-24.04-x64-4
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -36,7 +36,7 @@ jobs:
         run: "! grep -rn -e '—' -e '–' site/"
   deploy:
     needs: validate
-    runs-on: ubuntu-latest
+    runs-on: runzumi-ubuntu-24.04-x64-4
     timeout-minutes: 10
     environment:
       name: github-pages

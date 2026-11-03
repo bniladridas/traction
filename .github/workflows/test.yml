@@ -24,7 +24,7 @@ on:
 
 jobs:
   contract:
-    runs-on: ubuntu-latest
+    runs-on: runzumi-ubuntu-24.04-x64-4
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4

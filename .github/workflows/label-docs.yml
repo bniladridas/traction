@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   label-docs:
-    runs-on: ubuntu-latest
+    runs-on: runzumi-ubuntu-24.04-x64-4
     timeout-minutes: 5
     steps:
       - name: Add documentation label to docs-only PRs
